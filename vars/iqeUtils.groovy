@@ -457,6 +457,24 @@ def writeVaultEnvVars(Map options) {
 }
 
 
+private def setupIbutsuEnvVars(Map options) {
+    /* Configure ibutsu environment variables based on options */
+    
+    // Set defaults if not already set (for backward compatibility)
+    options['ibutsu'] = options.get('ibutsu', true)
+    options['ibutsuUrl'] = options.get('ibutsuUrl', pipelineVars.defaultIbutsuUrl)
+    
+    // Set up ibutsu environment variables if ibutsu is enabled
+    if (options['ibutsu']) {
+        writeEnv('IBUTSU_MODE', options['ibutsuUrl'])
+        writeEnv('IBUTSU_PROJECT', 'insights-qe')
+        writeEnv('IBUTSU_SOURCE', env.BUILD_TAG ?: 'csb-jenkins')
+        // Set IBUTSU_TOKEN from Jenkins secret store
+        writeEnvFromCredential('IBUTSU_TOKEN', 'ibutsuToken')
+    }
+}
+
+
 def configIQE(String appName, Map options) {
     /* Sets up vault and .env files */
     writeEnv('ENV_FOR_DYNACONF', options['envName'])
