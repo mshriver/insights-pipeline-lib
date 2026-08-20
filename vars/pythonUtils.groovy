@@ -13,12 +13,11 @@ def postPipfileComment(parameters = [:]) {
     }
 }
 
-
 def removePipfileComments() {
     // Remove all comments on a github PR indicating that a Pipfile is in a bad state
     try {
         for (comment in pullRequest.comments) {
-            if (comment.body.contains("Pipfile violation")) {
+            if (comment.body.contains('Pipfile violation')) {
                 comment.delete()
             }
         }
@@ -28,11 +27,8 @@ def removePipfileComments() {
     }
 }
 
-
-
-
 def runPipenvInstall(parameters = [:]) {
-    gitUtils.ghNotify context: "pipinstall", status: "PENDING"
+    gitUtils.ghNotify context: 'pipinstall', status: 'PENDING'
 
     // Test that pipenv install works, and check that the lock file is in sync with the Pipfile
     def scmVars = parameters['scmVars']
@@ -44,12 +40,12 @@ def runPipenvInstall(parameters = [:]) {
     def lockError = "\n* `Pipfile.lock` is out of sync. Run '`pipenv lock`' and commit the changes."
     def installError = "\n* '`pipenv install`' has failed."
 
-    if (installPipenv) sh "pip install --user --upgrade pip setuptools wheel pipenv"
+    if (installPipenv) sh 'pip install --user --upgrade pip setuptools wheel pipenv'
 
     // NOTE: Removing old comments won't work unless Pipeline Github Plugin >= v2.0
     removePipfileComments()
 
-    def sequentialArg = sequential ? "--sequential" : ""
+    def sequentialArg = sequential ? '--sequential' : ''
 
     // use --deploy to check if Pipfile and Pipfile.lock are in sync
     def cmdStatus = sh(
@@ -61,10 +57,10 @@ def runPipenvInstall(parameters = [:]) {
     )
 
     def installFailed = false
-    def errorMsg = ""
+    def errorMsg = ''
     if (cmdStatus != 0) {
-        if (readFile("pipenv_install_out.txt").trim() ==~ lockErrorRegex) {
-            currentBuild.result = "UNSTABLE"
+        if (readFile('pipenv_install_out.txt').trim() ==~ lockErrorRegex) {
+            currentBuild.result = 'UNSTABLE'
             errorMsg += lockError
             // try to install without the deploy flag to allow the other tests to run
             cmdStatus = sh(
@@ -86,28 +82,27 @@ def runPipenvInstall(parameters = [:]) {
         }
     }
 
-    archiveArtifacts("pipenv_install_out.txt")
+    archiveArtifacts('pipenv_install_out.txt')
     if (errorMsg) {
         postPipfileComment(commitId: scmVars.GIT_COMMIT, str: errorMsg)
     }
     if (installFailed) {
-        gitUtils.ghNotify context: "pipinstall", status: "FAILURE"
-        error("pipenv install has failed")
+        gitUtils.ghNotify context: 'pipinstall', status: 'FAILURE'
+        error('pipenv install has failed')
     } else {
-        gitUtils.ghNotify context: "pipinstall", status: "SUCCESS"
+        gitUtils.ghNotify context: 'pipinstall', status: 'SUCCESS'
     }
 }
-
 
 def runLintCheck(parameters = [:]) {
     // Run a lint check using either flake8 or pylama (with the pytest plugin)
     def pylama = parameters.get('pylama', false)
 
-    gitUtils.withStatusContext("lint") {
+    gitUtils.withStatusContext('lint') {
         if (pylama) {
             sh(
                 "${pipelineVars.userPath}/pipenv run python -m pytest --pylama " +
-                "--junitxml=lint-results.xml --ignore=tests/"
+                '--junitxml=lint-results.xml --ignore=tests/'
             )
         } else {
             sh "${pipelineVars.userPath}/pipenv run flake8 . --output-file lint-results.txt"
@@ -115,7 +110,7 @@ def runLintCheck(parameters = [:]) {
     }
 
     try {
-        if (fileExists("lint-results.txt")) {
+        if (fileExists('lint-results.txt')) {
             sh "${pipelineVars.userPath}/pipenv run flake8_junit lint-results.txt lint-results.xml"
         }
         junit 'lint-results.xml'
@@ -125,11 +120,10 @@ def runLintCheck(parameters = [:]) {
     }
 }
 
-
 def checkCoverage(parameters = [:]) {
     // Check that code coverage isn't below a certain threshold
     // Assumes that python code coverage has already been run
-    gitUtils.withStatusContext("coverage") {
+    gitUtils.withStatusContext('coverage') {
         def threshold = parameters.get('threshold', 80)
 
         def status = 99
@@ -144,7 +138,7 @@ def checkCoverage(parameters = [:]) {
 
         archiveArtifacts 'htmlcov/*'
 
-        if (status != 0) { 
+        if (status != 0) {
             throw new Exception("Code coverage is below threshold of ${threshold}%")
         }
     }

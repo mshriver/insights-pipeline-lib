@@ -1,7 +1,7 @@
 // Helpers for spinning up jenkins slaves running on OpenShift and other OpenShift utils
 
 //TODO check if needed
-private def setDevPiEnvVars(String image, String cloud, Collection envVars) {
+private setDevPiEnvVars(String image, String cloud, Collection envVars) {
     // If using the IQE tests core image on the external OpenShift deployment, use the devpi
     // server deployed in that external cluster
     if (image == pipelineVars.iqeCoreImage && cloud == pipelineVars.defaultCloud) {
@@ -12,14 +12,12 @@ private def setDevPiEnvVars(String image, String cloud, Collection envVars) {
     }
 }
 
-
-private def getNow() {
+private getNow() {
     def now = new Date()
     return now.format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", TimeZone.getTimeZone('UTC'))
 }
 
-
-private def getContainerLogs(label, containerNames) {
+private getContainerLogs(label, containerNames) {
     containerNames.each { containerName ->
         def fileName = "${label}-${containerName}.log"
         def logData = containerLog(name: containerName, tailingLines: 100, returnLog: true, limitBytes: 100000)
@@ -28,8 +26,7 @@ private def getContainerLogs(label, containerNames) {
     }
 }
 
-
-private def runBody(Map podParameters, String label, String containerName, Closure body) {
+private runBody(Map podParameters, String label, String containerName, Closure body) {
     // each containerTemplate item in 'containers' is type:
     // org.jenkinsci.plugins.structs.describable.UninstantiatedDescribable
     def containerNames = podParameters['containers'].collect { containerDescribable ->
@@ -51,14 +48,13 @@ private def runBody(Map podParameters, String label, String containerName, Closu
                 try {
                     getContainerLogs(label, containerNames)
                 }
-                catch(err) {
-                    echo "Error collecting logs: ${err.toString()}"
+                catch (err) {
+                    echo "Error collecting logs: ${err}"
                 }
             }
         }
     }
 }
-
 
 def withNode(Map parameters = [:], Closure body) {
     /*
@@ -68,22 +64,22 @@ def withNode(Map parameters = [:], Closure body) {
     def cloud = parameters.get('cloud', pipelineVars.defaultCloud)
     def jenkinsSlaveImage = parameters.get('jenkinsSlaveImage', pipelineVars.centralCIjenkinsSlaveImage)
     def namespace = parameters.get('namespace', pipelineVars.upshiftNameSpace)
-    def requestCpu = parameters.get('resourceRequestCpu', "200m")
-    def limitCpu = parameters.get('resourceLimitCpu', "500m")
-    def requestMemory = parameters.get('resourceRequestMemory', "100Mi")
-    def limitMemory = parameters.get('resourceLimitMemory', "1Gi")
+    def requestCpu = parameters.get('resourceRequestCpu', '200m')
+    def limitCpu = parameters.get('resourceLimitCpu', '500m')
+    def requestMemory = parameters.get('resourceRequestMemory', '100Mi')
+    def limitMemory = parameters.get('resourceLimitMemory', '1Gi')
     def jenkinsSvcAccount = parameters.get('jenkinsSvcAccount', pipelineVars.jenkinsSvcAccount)
-    def jnlpRequestCpu = parameters.get('jnlpRequestCpu', "100m")
-    def jnlpLimitCpu = parameters.get('jnlpLimitCpu', "300m")
-    def jnlpRequestMemory = parameters.get('jnlpRequestMemory', "256Mi")
-    def jnlpLimitMemory = parameters.get('jnlpLimitMemory', "512Mi")
-    def buildingContainer = parameters.get('buildingContainer', "builder")
+    def jnlpRequestCpu = parameters.get('jnlpRequestCpu', '100m')
+    def jnlpLimitCpu = parameters.get('jnlpLimitCpu', '300m')
+    def jnlpRequestMemory = parameters.get('jnlpRequestMemory', '256Mi')
+    def jnlpLimitMemory = parameters.get('jnlpLimitMemory', '512Mi')
+    def buildingContainer = parameters.get('buildingContainer', 'builder')
     def yaml = parameters.get('yaml')
     def envVars = parameters.get('envVars', [])
     def extraContainers = parameters.get('extraContainers', [])
     def volumes = parameters.get('volumes', [])
 
-    def label = "node-${UUID.randomUUID().toString()}"
+    def label = "node-${UUID.randomUUID()}"
 
     def podParameters = [
         label: label,
@@ -92,8 +88,8 @@ def withNode(Map parameters = [:], Closure body) {
         cloud: cloud,
         namespace: namespace,
         annotations: [
-            podAnnotation(key: "job-name", value: "${env.JOB_NAME}"),
-            podAnnotation(key: "run-display-url", value: "${env.RUN_DISPLAY_URL}"),
+            podAnnotation(key: 'job-name', value: "${env.JOB_NAME}"),
+            podAnnotation(key: 'run-display-url', value: "${env.RUN_DISPLAY_URL}"),
         ],
         volumes: volumes
     ]
@@ -135,7 +131,6 @@ def withNode(Map parameters = [:], Closure body) {
     runBody(podParameters, label, buildingContainer, body)
 }
 
-
 def withPlaywrightNode(Map parameters = [:], Closure body) {
     /*
     Spins up a pod with 3 containers: jnlp, playwright, and specified 'image'
@@ -145,25 +140,25 @@ def withPlaywrightNode(Map parameters = [:], Closure body) {
     def slaveImage = parameters.get('slaveImage', pipelineVars.centralCIjenkinsSlaveImage)
     def playwrightImage = parameters.get('playwrightImage', pipelineVars.playwrightImage)
     def image = parameters.get('image', pipelineVars.iqeCoreImage)
-    def requestCpu = parameters.get('resourceRequestCpu', "500m")
-    def limitCpu = parameters.get('resourceLimitCpu', "500m")
-    def requestMemory = parameters.get('resourceRequestMemory', "100Mi")
-    def limitMemory = parameters.get('resourceLimitMemory', "1Gi")
+    def requestCpu = parameters.get('resourceRequestCpu', '500m')
+    def limitCpu = parameters.get('resourceLimitCpu', '500m')
+    def requestMemory = parameters.get('resourceRequestMemory', '100Mi')
+    def limitMemory = parameters.get('resourceLimitMemory', '1Gi')
     def jenkinsSvcAccount = parameters.get('jenkinsSvcAccount', pipelineVars.jenkinsSvcAccount)
-    def jnlpRequestCpu = parameters.get('jnlpRequestCpu', "100m")
-    def jnlpLimitCpu = parameters.get('jnlpLimitCpu', "300m")
-    def jnlpRequestMemory = parameters.get('jnlpRequestMemory', "256Mi")
-    def jnlpLimitMemory = parameters.get('jnlpLimitMemory', "512Mi")
-    def playwrightRequestCpu = parameters.get('playwrightRequestCpu', "1000m")
-    def playwrightLimitCpu = parameters.get('playwrightLimitCpu', "1500m")
-    def playwrightRequestMemory = parameters.get('playwrightRequestMemory', "1Gi")
-    def playwrightLimitMemory = parameters.get('playwrightLimitMemory', "3Gi")
+    def jnlpRequestCpu = parameters.get('jnlpRequestCpu', '100m')
+    def jnlpLimitCpu = parameters.get('jnlpLimitCpu', '300m')
+    def jnlpRequestMemory = parameters.get('jnlpRequestMemory', '256Mi')
+    def jnlpLimitMemory = parameters.get('jnlpLimitMemory', '512Mi')
+    def playwrightRequestCpu = parameters.get('playwrightRequestCpu', '1000m')
+    def playwrightLimitCpu = parameters.get('playwrightLimitCpu', '1500m')
+    def playwrightRequestMemory = parameters.get('playwrightRequestMemory', '1Gi')
+    def playwrightLimitMemory = parameters.get('playwrightLimitMemory', '3Gi')
     def envVars = parameters.get('envVars', [])
     def extraContainers = parameters.get('extraContainers', [])
     def volumes = parameters.get('volumes', [])
     volumes.add(emptyDirVolume(mountPath: '/dev/shm', memory: true))
 
-    def label = "node-${UUID.randomUUID().toString()}"
+    def label = "node-${UUID.randomUUID()}"
 
     setDevPiEnvVars(image, cloud, envVars)
 
@@ -193,8 +188,8 @@ def withPlaywrightNode(Map parameters = [:], Closure body) {
                 resourceRequestMemory: playwrightRequestMemory,
                 resourceLimitMemory: playwrightLimitMemory,
                 envVars: [
-                    envVar(key: 'PW_BROWSER', value: "chromium"),
-                    envVar(key: 'PW_HEADLESS', value: "false"),
+                    envVar(key: 'PW_BROWSER', value: 'chromium'),
+                    envVar(key: 'PW_HEADLESS', value: 'false'),
                 ],
             ),
             containerTemplate(
@@ -212,8 +207,8 @@ def withPlaywrightNode(Map parameters = [:], Closure body) {
         ],
         volumes: volumes,
         annotations: [
-            podAnnotation(key: "job-name", value: "${env.JOB_NAME}"),
-            podAnnotation(key: "run-display-url", value: "${env.RUN_DISPLAY_URL}"),
+            podAnnotation(key: 'job-name', value: "${env.JOB_NAME}"),
+            podAnnotation(key: 'run-display-url', value: "${env.RUN_DISPLAY_URL}"),
         ]
     ]
 
@@ -222,7 +217,6 @@ def withPlaywrightNode(Map parameters = [:], Closure body) {
 
     runBody(podParameters, label, 'iqe', body)
 }
-
 
 def withNodeSelector(Map parameters = [:], Boolean ui, Closure body) {
     /* A wrapper that selects a different node type based on the ui flag */
@@ -237,7 +231,6 @@ def withNodeSelector(Map parameters = [:], Boolean ui, Closure body) {
     }
 }
 
-
 def withJnlpNode(Map parameters = [:], Closure body) {
     /*
     Spins up a pod with a single jnlp container
@@ -246,16 +239,16 @@ def withJnlpNode(Map parameters = [:], Closure body) {
     def image = parameters.get('image', pipelineVars.centralCIjenkinsSlaveImage)
     def namespace = parameters.get('namespace', pipelineVars.upshiftNameSpace)
     def jenkinsSvcAccount = parameters.get('jenkinsSvcAccount', pipelineVars.jenkinsSvcAccount)
-    def jnlpRequestCpu = parameters.get('jnlpRequestCpu', "100m")
-    def jnlpLimitCpu = parameters.get('jnlpLimitCpu', "300m")
-    def jnlpRequestMemory = parameters.get('jnlpRequestMemory', "256Mi")
-    def jnlpLimitMemory = parameters.get('jnlpLimitMemory', "512Mi")
+    def jnlpRequestCpu = parameters.get('jnlpRequestCpu', '100m')
+    def jnlpLimitCpu = parameters.get('jnlpLimitCpu', '300m')
+    def jnlpRequestMemory = parameters.get('jnlpRequestMemory', '256Mi')
+    def jnlpLimitMemory = parameters.get('jnlpLimitMemory', '512Mi')
     def yaml = parameters.get('yaml')
     def envVars = parameters.get('envVars', [])
     def extraContainers = parameters.get('extraContainers', [])
     def volumes = parameters.get('volumes', [])
 
-    def label = "node-${UUID.randomUUID().toString()}"
+    def label = "node-${UUID.randomUUID()}"
 
     def podParameters = [
         label: label,
@@ -264,8 +257,8 @@ def withJnlpNode(Map parameters = [:], Closure body) {
         cloud: cloud,
         namespace: namespace,
         annotations: [
-            podAnnotation(key: "job-name", value: "${env.JOB_NAME}"),
-            podAnnotation(key: "run-display-url", value: "${env.RUN_DISPLAY_URL}"),
+            podAnnotation(key: 'job-name', value: "${env.JOB_NAME}"),
+            podAnnotation(key: 'run-display-url', value: "${env.RUN_DISPLAY_URL}"),
         ],
         volumes: volumes
     ]
@@ -294,12 +287,11 @@ def withJnlpNode(Map parameters = [:], Closure body) {
     runBody(podParameters, label, 'jnlp', body)
 }
 
-
 def collectLogs(parameters = [:]) {
     /* Collects all logs from all pods running in 'project' and stores them as artifacts */
     def project = parameters['project']
 
-    stage("Collect logs") {
+    stage('Collect logs') {
         try {
             sh "oc project ${project}"
             sh '''
@@ -316,9 +308,9 @@ def collectLogs(parameters = [:]) {
                     done
                 done
             '''
-            sh "oc get --export all -o yaml > oc_export_all.yaml"
-            archiveArtifacts "oc_export_all.yaml"
-            archiveArtifacts "applogs/*.log"
+            sh 'oc get --export all -o yaml > oc_export_all.yaml'
+            archiveArtifacts 'oc_export_all.yaml'
+            archiveArtifacts 'applogs/*.log'
         } catch (err) {
             def errString = err.toString()
             echo "Collecting logs failed: ${errString}"
@@ -326,20 +318,19 @@ def collectLogs(parameters = [:]) {
     }
 }
 
-
 def waitForDeployment(parameters = [:]) {
-    /** 
+    /**
     * Waits until source code in a pod has a certain commit and then waits until it is fully
     * deployed. It assumes that pods and replication controllers have one common label e.g.:
     *   "app: compliance-backend".
     */
-    def cluster = parameters["cluster"]
-    def credentials = parameters["credentials"]
-    def project = parameters["project"]
-    def minutes = parameters["minutes"]
-    def label = parameters["label"]
-    def value = parameters["value"]
-    def gitCommit = parameters["gitCommit"]
+    def cluster = parameters['cluster']
+    def credentials = parameters['credentials']
+    def project = parameters['project']
+    def minutes = parameters['minutes']
+    def label = parameters['label']
+    def value = parameters['value']
+    def gitCommit = parameters['gitCommit']
     openshift.withCluster(cluster) {
         openshift.withCredentials(credentials) {
             openshift.withProject(project) {
@@ -347,7 +338,7 @@ def waitForDeployment(parameters = [:]) {
                     finished = false
                     waitUntil {
                         try {
-                            def pod = openshift.selector("pod", [(label): value]).names()[0]
+                            def pod = openshift.selector('pod', [(label): value]).names()[0]
                             def podGitCommit = openshift.rsh("$pod git rev-parse HEAD").out.trim()
                             // Once a new code appeared in a pod we need to wait until it will be
                             // fully deployed.
@@ -356,7 +347,7 @@ def waitForDeployment(parameters = [:]) {
                                 waitUntil {
                                     // Get the latest replication controller and check its status
                                     def lastRc = openshift.selector(
-                                        "rc", [(label): value]
+                                        'rc', [(label): value]
                                     ).objects()[-1]
 
                                     finished = lastRc.status.replicas == lastRc.status.readyReplicas
@@ -367,7 +358,7 @@ def waitForDeployment(parameters = [:]) {
                                 }
                             }
                             return finished
-                        } catch(err) {
+                        } catch (err) {
                             echo "Error occured: ${err.getMessage()}"
                             return false
                         }

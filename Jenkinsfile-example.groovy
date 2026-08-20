@@ -6,11 +6,10 @@
  */
 import groovy.transform.Field
 
-@Library("github.com/RedHatInsights/insights-pipeline-lib@v3") _
+@Library('github.com/RedHatInsights/insights-pipeline-lib@v3') _
 
 // Code coverage failure threshold
 @Field def codecovThreshold = 80
-
 
 node {
     // Cancel any prior builds that are running for this job
@@ -22,12 +21,11 @@ node {
     }
 }
 
-
 def runStages() {
     // withNode is a helper to spin up a pod using the Kubernetes plugin.
     // The pod contains a jnlp slave container, and a container specified by 'image' -- the body
     // code runs on the specified image.
-    openShiftUtils.withNode(image: "centos/python-36-centos7") {
+    openShiftUtils.withNode(image: 'centos/python-36-centos7') {
         // check out source again to get it in this node's workspace
         scmVars = checkout scm
 
@@ -48,10 +46,10 @@ def runStages() {
             // withStatusContext runs the body code and notifies GitHub on whether it passed or
             // failed. Specifying 'unittest' will update the
             // "continuous-integration/jenkins/unittest" status on GitHub
-            gitUtils.withStatusContext("unittest") {
-                sh (
+            gitUtils.withStatusContext('unittest') {
+                sh(
                     "${pipelineVars.userPath}/pipenv run python -m pytest --junitxml=junit.xml" +
-                    "--cov=service --cov=db --cov-report html tests/ -s -v"
+                    '--cov=service --cov=db --cov-report html tests/ -s -v'
                 )
             }
             junit 'junit.xml'
@@ -66,7 +64,7 @@ def runStages() {
 
         if (currentBuild.currentResult == 'SUCCESS') {
             if (env.BRANCH_NAME == 'master') {
-                // Stages to run specifically if master branch was updated
+            // Stages to run specifically if master branch was updated
             }
         }
     }

@@ -7,19 +7,17 @@
  *  https://github.com/RedHatInsights/e2e-deploy/blob/master/jenkins/deploy/template.groovy
  */
 
-
-private def getParamNameForSvcKey(String key, Map svcData) {
+private getParamNameForSvcKey(String key, Map svcData) {
     // Auto-generate the param name for a service if it was not specified
     return svcData.get('paramName', "DEPLOY_${key.toString().toUpperCase()}")
 }
 
-
-private def getJobParams(envs, svcs) {
+private getJobParams(envs, svcs) {
     // Set up the job parameters for the job by reading the 'envs' and 'svcs' config
     def p = []
     svcs.each { key, data ->
         def paramName = getParamNameForSvcKey(key, data)
-        def displayName = data.get('displayName', "${key.toString()}")
+        def displayName = data.get('displayName', "${key}")
         Boolean checkedByDefault = data.get('checkedByDefault', true)
         p.add([
             $class: 'BooleanParameterDefinition',
@@ -45,15 +43,14 @@ private def getJobParams(envs, svcs) {
     return p
 }
 
-
-private def parseParams(envs, svcs) {
+private parseParams(envs, svcs) {
     // Parse the selected parameters when the job is run
     def selectedEnv = params.ENV
     def imagesToCopy = [:]  // a list of Maps with key = srcImage, value = dstImage
     def servicesToSkip = envs[selectedEnv].get('skip', [])
     def boxesChecked = []
 
-    echo "Job params: ${params.toString()}"
+    echo "Job params: ${params}"
 
     svcs.each { key, data ->
         def paramName = getParamNameForSvcKey(key, data)
@@ -69,7 +66,7 @@ private def parseParams(envs, svcs) {
             "disableImageCopy: ${disableImageCopy}"
         )
 
-        if (boxChecked) boxesChecked.add(data.get("displayName").toString())
+        if (boxChecked) boxesChecked.add(data.get('displayName').toString())
 
         // if the service was checked, add its image to the list of images we will copy
         if (copyImages && !disableImageCopy && boxChecked) {
@@ -108,10 +105,9 @@ private def parseParams(envs, svcs) {
         imagesToCopy: imagesToCopy,
         servicesToSkip: servicesToSkip,
         deployServices: envs[selectedEnv]['deployServices'],
-        boxesChecked: boxesChecked.size() == svcs.size() ? ["all"] : boxesChecked
+        boxesChecked: boxesChecked.size() == svcs.size() ? ['all'] : boxesChecked
     ]
 }
-
 
 def runDeploy(parsed) {
     // Run the actual deploy after the parameters have been parsed
@@ -125,7 +121,7 @@ def runDeploy(parsed) {
 
     currentBuild.description = "env: ${envConfig['env']}"
 
-    openShiftUtils.withNode(image: "jenkins-deploy-slave:latest") {
+    openShiftUtils.withNode(image: 'jenkins-deploy-slave:latest') {
         pipelineUtils.stageIf(imagesToCopy, 'Copy images') {
             // 'imagesToCopy' is a list of Maps, generate the args we need for promoteImages
             def srcImages = []
@@ -142,8 +138,8 @@ def runDeploy(parsed) {
                 dstSaUsername: envConfig['saUsername'],
                 dstSaTokenCredentialsId: envConfig['saTokenCredentialsId'],
                 dstCluster: envConfig['cluster'],
-                dstQuayUser: envConfig.get("dstQuayUser", pipelineVars.quayUser),
-                dstQuayTokenId: envConfig.get("dstQuayTokenId", pipelineVars.quayPushCredentialsId),
+                dstQuayUser: envConfig.get('dstQuayUser', pipelineVars.quayUser),
+                dstQuayTokenId: envConfig.get('dstQuayTokenId', pipelineVars.quayPushCredentialsId),
             )
         }
 
@@ -169,7 +165,6 @@ def runDeploy(parsed) {
     }
 }
 
-
 def call(p = [:]) {
     // Create a deployment pipeline job given an environment and service config
     def envs = p['environments']
@@ -182,8 +177,8 @@ def call(p = [:]) {
     // downloaded the Jenkinsfile to populate params. If this happens, or if the
     // "reload" checkbox is explicitly checked, just set the properties and quit
     if (!params.ENV || params.RELOAD) {
-        echo "Job is only reloading"
-        currentBuild.description = "reload"
+        echo 'Job is only reloading'
+        currentBuild.description = 'reload'
         properties([parameters(getJobParams(envs, svcs) + extraParams)])
         return
     }
@@ -199,21 +194,21 @@ def call(p = [:]) {
 
     // For build #1, only load the pipeline and exit
     // This is so the next time the job is built, "Build with parameters" will be available
-    if (env.BUILD_NUMBER.toString() == "1") {
-        echo "Initial run, loaded pipeline job and now exiting."
-        currentBuild.description = "loaded params"
+    if (env.BUILD_NUMBER.toString() == '1') {
+        echo 'Initial run, loaded pipeline job and now exiting.'
+        currentBuild.description = 'loaded params'
         return
     }
 
     def envName = parsed['envConfig']['env']
     def verboseNotifications = parsed['envConfig'].get('verboseNotifications', true)
-    def boxesChecked = parsed['boxesChecked'].join(", ")
+    def boxesChecked = parsed['boxesChecked'].join(', ')
 
     if (verboseNotifications) {
         slackUtils.sendMsg(
             slackChannel: slackChannel,
             slackUrl: slackUrl,
-            result: "info",
+            result: 'info',
             msg: "started for env *${envName}* (selected components: ${boxesChecked})"
         )
     }
@@ -224,7 +219,7 @@ def call(p = [:]) {
         slackUtils.sendMsg(
             slackChannel: [slackChannel, pipelineVars.slackDeployAlertsChannel],
             slackUrl: slackUrl,
-            result: "failure",
+            result: 'failure',
             msg: "failed for env *${envName}* (selected components: ${boxesChecked})",
         )
         throw err
@@ -234,7 +229,7 @@ def call(p = [:]) {
         slackUtils.sendMsg(
             slackChannel: slackChannel,
             slackUrl: slackUrl,
-            result: "success",
+            result: 'success',
             msg: "successful for env *${envName}* (selected components: ${boxesChecked})"
         )
     }

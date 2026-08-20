@@ -1,14 +1,15 @@
 class pipelineVars implements Serializable {
-    String defaultMarker = "core"
 
-    String jenkinsSvcAccount = "default"
+    String defaultMarker = 'core'
 
-    String gitSshCreds = "insightsdroid-ssh-git"
+    String jenkinsSvcAccount = 'default'
 
-    String userPath = "~/.local/bin"
-    String venvDir = "~/.venv"
+    String gitSshCreds = 'insightsdroid-ssh-git'
 
-    String smokeTestResourceLabel = "smoke_test_projects"
+    String userPath = '~/.local/bin'
+    String venvDir = '~/.venv'
+
+    String smokeTestResourceLabel = 'smoke_test_projects'
     String e2eDeployDir = 'e2e-deploy'
     String e2eDeployRepo = 'https://github.com/RedHatInsights/e2e-deploy.git'
     String e2eDeployRepoSsh = 'git@github.com:RedHatInsights/e2e-deploy.git'
@@ -16,19 +17,19 @@ class pipelineVars implements Serializable {
     String e2eTestsRepo = 'https://github.com/RedHatInsights/e2e-tests.git'
     String e2eTestsRepoSsh = 'git@github.com:RedHatInsights/e2e-tests.git'
 
-    String prodCluster = "api.insights.openshift.com"
-    String devCluster = "api.insights-dev.openshift.com"
-    String defaultVaultUrl = "https://vault.devshift.net"
-    String defaultVaultRoleIdCredential = "vaultRoleId"
-    String defaultVaultSecretIdCredential = "vaultSecretId"
-    String defaultVaultMountPoint = "insights"
+    String prodCluster = 'api.insights.openshift.com'
+    String devCluster = 'api.insights-dev.openshift.com'
+    String defaultVaultUrl = 'https://vault.devshift.net'
+    String defaultVaultRoleIdCredential = 'vaultRoleId'
+    String defaultVaultSecretIdCredential = 'vaultSecretId'
+    String defaultVaultMountPoint = 'insights'
 
-    String defaultIbutsuUrl = "https://ibutsu-api.insights.corp.redhat.com"
+    String defaultIbutsuUrl = 'https://ibutsu-api.insights.corp.redhat.com'
     // String defaultIbutsuUrl = "s3"
-    String defaultIbutsuFrontendUrl = "https://ibutsu.insights.corp.redhat.com"
-    String defaultIbutsuInsightsProject = "3915c900-85fc-1222-833c-10d51af56f2e"
-    String defaultIbutsuAwsBucket = "ibutsu-payloads"
-    String defaultIbutsuAwsRegion = "us-east-2"
+    String defaultIbutsuFrontendUrl = 'https://ibutsu.insights.corp.redhat.com'
+    String defaultIbutsuInsightsProject = '3915c900-85fc-1222-833c-10d51af56f2e'
+    String defaultIbutsuAwsBucket = 'ibutsu-payloads'
+    String defaultIbutsuAwsRegion = 'us-east-2'
 
     String centralCIjenkinsSlaveImage = (
         'image-registry.openshift-image-registry.svc:5000/dno--jenkins-csb-insights-qe/main-jenkins-agent:latest'
@@ -37,25 +38,25 @@ class pipelineVars implements Serializable {
     String iqeTestsImage = 'quay.io/cloudservices/iqe-tests:latest'
     String playwrightImage = 'quay.io/redhat-services-prod/insights-management-tenant/playwright-images/playwright-vnc-chromium:1.58'
 
-    String defaultBrowser = "chromium"
+    String defaultBrowser = 'chromium'
 
     String defaultCloud = 'openshift'
     String upshiftCloud = 'upshift'
     String upshiftNameSpace = 'dno--jenkins-csb-insights-qe'
 
-    String slackDefaultUrl = "https://redhat-internal.slack.com/services/hooks/jenkins-ci/"
+    String slackDefaultUrl = 'https://redhat-internal.slack.com/services/hooks/jenkins-ci/'
     String slackDefaultChannel = '#insights-qe-feed'
-    String slackDeployAlertsChannel = "#deploy-alerts"
-    String slackDefaultTeamDomain = "redhat-internal"
+    String slackDeployAlertsChannel = '#deploy-alerts'
+    String slackDefaultTeamDomain = 'redhat-internal'
 
     String quayBaseUri = 'quay.io/cloudservices'
-    String quayUser = "cloudservices+push"
-    String quayPushCredentialsId = "quay-cloudservices-push-token"
-    String stageSSOUrl = "https://sso.stage.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token"
+    String quayUser = 'cloudservices+push'
+    String quayPushCredentialsId = 'quay-cloudservices-push-token'
+    String stageSSOUrl = 'https://sso.stage.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token'
 
-    String sitrepsRapidastUrl = "https://sitreps-api.apps.int.gpc.ocp-hub.prod.psi.redhat.com/api/v1/rapidast/"
-    String rapidastBucket = "secaut-bucket"
-    String rapidastProxyHost = "squid.corp.redhat.com"
+    String sitrepsRapidastUrl = 'https://sitreps-api.apps.int.gpc.ocp-hub.prod.psi.redhat.com/api/v1/rapidast/'
+    String rapidastBucket = 'secaut-bucket'
+    String rapidastProxyHost = 'squid.corp.redhat.com'
     String rapidastProxyPort = '3128'
     String rapidastBinDirectory = '/opt/rapidast'
     String rapidastLogLevel = 'info' // debug,verbose,info,warning,error,critical
@@ -65,4 +66,5 @@ class pipelineVars implements Serializable {
         stage: 'subscription.rhsm.stage.redhat.com',
         prod: 'subscription.rhsm.redhat.com'
     ]
+
 }

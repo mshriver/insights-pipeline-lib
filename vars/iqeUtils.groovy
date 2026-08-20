@@ -33,11 +33,7 @@
  *     def results = pipelineUtils.runParallel(iqeUtils.prepareStages(options, appConfigs))
  */
 
-
-import java.util.ArrayList
-
-
-private def parseOptions(Map options) {
+private parseOptions(Map options) {
     /*
      * Take the options map provided by the caller in prepareStages and populate it with defaults
      * if needed
@@ -49,7 +45,7 @@ private def parseOptions(Map options) {
 
     // the container image that the tests will run with in OpenShift
     // we use a ternary here to deal with the empty string
-    options['image'] = options.get('image') ? options.get("image") : pipelineVars.iqeCoreImage
+    options['image'] = options.get('image') ? options.get('image') : pipelineVars.iqeCoreImage
 
     // the namespace that the test pods run in
     options['namespace'] = options.get('namespace')
@@ -61,16 +57,16 @@ private def parseOptions(Map options) {
     options['marker'] = options.get('marker', pipelineVars.defaultMarker)
 
     // the pytest filter expression (-k) used when running tests
-    options['filter'] = options.get('filter', "")
+    options['filter'] = options.get('filter', '')
 
     // the iqe --requirements expression used when running tests
-    options['requirements'] = options.get('requirements', "")
+    options['requirements'] = options.get('requirements', '')
 
     // the iqe --requirements-priority expression used when running tests
-    options['requirementsPriority'] = options.get('requirementsPriority', "")
+    options['requirementsPriority'] = options.get('requirementsPriority', '')
 
     // the iqe --test-importance filter expression used when running tests
-    options['testImportance'] = options.get('testImportance', "")
+    options['testImportance'] = options.get('testImportance', '')
 
     // whether or not to spin up a jenkins pod for running the tests
     options['allocateNode'] = options.get('allocateNode', true)
@@ -93,7 +89,6 @@ private def parseOptions(Map options) {
     // whether or not to provision a playwright container in the test pod for UI tests
     options['ui'] = options.get('ui', false)
 
-
     // enable pytest-xdist plugin for multiprocess parallelism
     options['xdistEnabled'] = options.get('xdistEnabled', false)
 
@@ -103,8 +98,8 @@ private def parseOptions(Map options) {
     // a Map of additional env vars to set in the .env file before running iqe
     def extraEnvVars = options.get('extraEnvVars', [:])
     // if we are running UI tests, force IQE to use default browser
-    if (options['ui'] && !extraEnvVars.containsKey('DYNACONF_MAIN__use_browser')){
-       extraEnvVars['DYNACONF_MAIN__use_browser'] = pipelineVars.defaultBrowser
+    if (options['ui'] && !extraEnvVars.containsKey('DYNACONF_MAIN__use_browser')) {
+        extraEnvVars['DYNACONF_MAIN__use_browser'] = pipelineVars.defaultBrowser
     }
     options['extraEnvVars'] = extraEnvVars
 
@@ -132,8 +127,7 @@ private def parseOptions(Map options) {
     return options
 }
 
-
-private def mergeAppOptions(Map options, Map appOptions) {
+private mergeAppOptions(Map options, Map appOptions) {
     /* Merge an app's options with the default options.*/
     if (!appOptions instanceof Map) {
         error("Incorrect syntax for appConfigs: 'options' for app is not a Map")
@@ -143,7 +137,6 @@ private def mergeAppOptions(Map options, Map appOptions) {
     mergedOptions = options + appOptions
     return mergedOptions
 }
-
 
 def runIQE(String plugin, Map appOptions) {
     /*
@@ -159,15 +152,15 @@ def runIQE(String plugin, Map appOptions) {
     def noParallelTests = false
     def noSequentialTests = false
 
-    def filterArgs = ""
-    def requirementsArgs = ""
-    def requirementsPriorityArgs = ""
-    def testImportanceArgs = ""
-    def browserlog = ""
-    def reportportalArgs = ""
-    def netlog = ""
-    def xdistArgs = ""
-    def forceDefaultUser = ""
+    def filterArgs = ''
+    def requirementsArgs = ''
+    def requirementsPriorityArgs = ''
+    def testImportanceArgs = ''
+    def browserlog = ''
+    def reportportalArgs = ''
+    def netlog = ''
+    def xdistArgs = ''
+    def forceDefaultUser = ''
 
     if (appOptions['filter']) {
         filterArgs = "-k \"${appOptions['filter']}\""
@@ -185,32 +178,32 @@ def runIQE(String plugin, Map appOptions) {
         testImportanceArgs = "--test-importance=${appOptions['testImportance']}"
     }
 
-    if (appOptions["reportportal"]) {
-        reportportalArgs = "--reportportal"
+    if (appOptions['reportportal']) {
+        reportportalArgs = '--reportportal'
     }
 
     // ibutsu configuration now handled via environment variables in configIQE
 
-    if (appOptions["browserlog"]) {
-        browserlog = "--browserlog"
+    if (appOptions['browserlog']) {
+        browserlog = '--browserlog'
     }
 
-    if (appOptions["netlog"]) {
-        netlog = "--netlog"
+    if (appOptions['netlog']) {
+        netlog = '--netlog'
     }
 
-    if (appOptions["xdistEnabled"]) {
+    if (appOptions['xdistEnabled']) {
         xdistArgs = "-n ${appOptions['parallelWorkerCount']}"
     }
 
-    if (appOptions["iqeForceDefaultUser"]) {
+    if (appOptions['iqeForceDefaultUser']) {
         forceDefaultUser = "--iqe-force-default-user=${appOptions['iqeForceDefaultUser']}"
     }
 
     def marker = appOptions['marker']
     def extraArgs = appOptions['extraArgs']
 
-    catchError(stageResult: "FAILURE") {
+    catchError(stageResult: 'FAILURE') {
         def screenshotsDir = sh(
             script: (
                 """
@@ -233,15 +226,15 @@ def runIQE(String plugin, Map appOptions) {
         }
 
         // run parallel tests
-        def errorMsgParallel = ""
-        def errorMsgSequential = ""
-        def markerArgs = marker ? "-m \"${marker}\"" : ""
+        def errorMsgParallel = ''
+        def errorMsgSequential = ''
+        def markerArgs = marker ? "-m \"${marker}\'' : ""
 
-        if (appOptions["xdistEnabled"]) {
+        if (appOptions['xdistEnabled']) {
             markerArgs = marker ? "-m \"parallel and (${marker})\"" : "-m \"parallel\""
             status = sh(
                 script: (
-                    """
+                    '''
                     set +x && export \$(cat "${env.WORKSPACE}/.env" | xargs) && set -x && \
                     iqe tests plugin ${plugin} -s -v \
                     --junitxml=junit-${plugin}-parallel.xml \
@@ -258,14 +251,14 @@ def runIQE(String plugin, Map appOptions) {
                     ${netlog} \
                     ${forceDefaultUser} \
                     2>&1
-                    """.stripIndent()
+                    '''.stripIndent()
                 ),
                 returnStatus: true
             )
             if (status == 5) {
                 noParallelTests = true
             } else if (status > 0) {
-                result = "FAILURE"
+                result = 'FAILURE'
                 errorMsgParallel = "Parallel test run failed with exit code ${status}."
             }
         } else {
@@ -273,13 +266,13 @@ def runIQE(String plugin, Map appOptions) {
         }
 
         // run sequential tests
-        if (appOptions["xdistEnabled"]) {
+        if (appOptions['xdistEnabled']) {
             markerArgs = marker ? "-m \"not parallel and (${marker})\"" : "-m \"not parallel\""
         }
 
         status = sh(
             script: (
-                """
+                '''
                 set +x && export \$(cat "${env.WORKSPACE}/.env" | xargs) && set -x && \
                 iqe tests plugin ${plugin} -s -v \
                 --junitxml=junit-${plugin}-sequential.xml \
@@ -295,28 +288,28 @@ def runIQE(String plugin, Map appOptions) {
                 ${netlog} \
                 ${forceDefaultUser} \
                 2>&1
-                """.stripIndent()
+                '''.stripIndent()
             ),
             returnStatus: true
         )
         if (status == 5) {
             noSequentialTests = true
         } else if (status > 0) {
-            result = "FAILURE"
+            result = 'FAILURE'
             errorMsgSequential = "Sequential test run failed with exit code ${status}."
         }
 
         if (noParallelTests && noSequentialTests) {
-            error("There were no tests collected in the sequential or parallel test runs.")
+            error('There were no tests collected in the sequential or parallel test runs.')
         }
 
         // if there were no failures recorded, it's a success
-        result = result ?: "SUCCESS"
+        result = result ?: 'SUCCESS'
 
         if (screenshotsDir) {
             dir(screenshotsDir) {
                 archiveArtifacts(
-                    artifacts: "*.png",
+                    artifacts: '*.png',
                     allowEmptyArchive: true
                 )
             }
@@ -329,7 +322,7 @@ def runIQE(String plugin, Map appOptions) {
 
     // archive Ibutsu artifacts
     archiveArtifacts(
-        artifacts: "*.tar.gz",
+        artifacts: '*.tar.gz',
         allowEmptyArchive: true
     )
 
@@ -341,22 +334,19 @@ def runIQE(String plugin, Map appOptions) {
     return result
 }
 
-
-private def writeEnvFromCredential(String key, String credentialsId) {
+private writeEnvFromCredential(String key, String credentialsId) {
     /* Helper to write a secret value to the .env file */
     withCredentials(
-        [string(credentialsId: credentialsId, variable: "SECRET")]
+        [string(credentialsId: credentialsId, variable: 'SECRET')]
     ) {
         sh "echo \"${key}=\$SECRET\" >> \"${env.WORKSPACE}/.env\""
     }
 }
 
-
-private def writeEnv(String key, String value) {
+private writeEnv(String key, String value) {
     /* Helper to write a String env value to the .env file */
     sh "echo \"${key}=${value}\" >> \"${env.WORKSPACE}/.env\""
 }
-
 
 def writeVaultEnvVars(Map options) {
     /* Parse options for vault settings and write the vault env vars to the .env file */
@@ -404,8 +394,7 @@ def writeVaultEnvVars(Map options) {
     writeEnv('DYNACONF_IQE_VAULT_LOADER_ENABLED', options['vaultEnabled'].toString())
 }
 
-
-private def setupIbutsuEnvVars(Map options) {
+private setupIbutsuEnvVars(Map options) {
     /* Configure ibutsu environment variables based on options */
 
     // Set defaults if not already set (for backward compatibility)
@@ -417,7 +406,7 @@ private def setupIbutsuEnvVars(Map options) {
     // Set up ibutsu environment variables if ibutsu is enabled
     if (options['ibutsu']) {
         writeEnv('IBUTSU_MODE', options['ibutsuUrl'])
-        if (options['ibutsuUrl'] == 's3'){
+        if (options['ibutsuUrl'] == 's3') {
             writeEnv('AWS_BUCKET', options['ibutsuBucket'])
             writeEnv('AWS_REGION', options['ibutsuRegion'])
 
@@ -441,7 +430,6 @@ private def setupIbutsuEnvVars(Map options) {
                 writeEnv('AWS_ACCESS_KEY_ID', "$AWS_ACCESS_KEY_ID")
                 writeEnv('AWS_SECRET_ACCESS_KEY', "$AWS_SECRET_ACCESS_KEY")
             }
-
         }
         writeEnv('IBUTSU_PROJECT', 'insights-qe')
         writeEnv('IBUTSU_SOURCE', env.BUILD_TAG ?: 'csb-jenkins')
@@ -461,11 +449,10 @@ def configIQE(String appName, Map options) {
     }
 }
 
-
-private def createTestStages(String appName, Map appConfig) {
+private createTestStages(String appName, Map appConfig) {
     def appOptions = appConfig['options']
 
-    stage("Configure IQE") {
+    stage('Configure IQE') {
         configIQE(appName, appOptions)
     }
 
@@ -482,23 +469,22 @@ private def createTestStages(String appName, Map appConfig) {
         pluginResults[appName] = result
     }
 
-    stage("Results") {
-        def pluginsFailed = pluginResults.findAll { it.value == "FAILURE" }
-        def pluginsPassed = pluginResults.findAll { it.value == "SUCCESS" }
+    stage('Results') {
+        def pluginsFailed = pluginResults.findAll { it.value == 'FAILURE' }
+        def pluginsPassed = pluginResults.findAll { it.value == 'SUCCESS' }
 
         // stash junit files so that other nodes can read them later
-        stash name: "${appName}-stash-files", allowEmpty: true, includes: "junit-*.xml"
+        stash name: "${appName}-stash-files", allowEmpty: true, includes: 'junit-*.xml'
 
-        echo "Plugins passed: ${pluginsPassed.keySet().join(",")}"
+        echo "Plugins passed: ${pluginsPassed.keySet().join(',')}"
         if (pluginsFailed) {
-            error "Plugins failed: ${pluginsFailed.keySet().join(",")}"
+            error "Plugins failed: ${pluginsFailed.keySet().join(',')}"
         }
         else if (!pluginsPassed) {
-            error "No plugins failed nor passed. Were the test runs aborted early?"
+            error 'No plugins failed nor passed. Were the test runs aborted early?'
         }
     }
 }
-
 
 def prepareStages(Map defaultOptions, Map appConfigs) {
     /*
@@ -519,13 +505,13 @@ def prepareStages(Map defaultOptions, Map appConfigs) {
 
     echo "options: ${options}"
 
-    appConfigs.each{ k, v ->
+    appConfigs.each { k, v ->
         // re-define vars, see https://jenkins.io/doc/pipeline/examples/#parallel-multiple-nodes
         def appName = k
         def appConfig = v
 
         if (!appConfig instanceof Map) {
-            error("Incorrect syntax for appConfig: must be a Map")
+            error('Incorrect syntax for appConfig: must be a Map')
         }
 
         def appOptions = mergeAppOptions(options, appConfig.get('options', [:]))
@@ -551,15 +537,15 @@ def prepareStages(Map defaultOptions, Map appConfigs) {
  */
 def writeIbutsuHtml() {
     writeFile(
-        file: "ibutsu.html",
+        file: 'ibutsu.html',
         text: (
-            "<p>⚠️ You need to be logged in first to access the page</p>" +
+            '<p>⚠️ You need to be logged in first to access the page</p>' +
             "<a href=\"${pipelineVars.defaultIbutsuFrontendUrl}/project/" +
             "${pipelineVars.defaultIbutsuInsightsProject}" +
-            "/results/" +
+            '/results/' +
             "?metadata.jenkins.build_number=%5Beq%5D${env.BUILD_NUMBER}" +
             "&metadata.jenkins.job_name=%5Beq%5D${env.JOB_NAME}\">Click here</a>"
         )
     )
-    archiveArtifacts "ibutsu.html"
+    archiveArtifacts 'ibutsu.html'
 }

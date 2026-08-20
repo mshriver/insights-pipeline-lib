@@ -8,53 +8,51 @@ import groovy.transform.Field
 import hudson.util.Secret
 
 // The env files that are processed whenever a template change is detected
-@Field def defaultEnvs = ["ci", "qa", "prod"]
+@Field def defaultEnvs = ['ci', 'qa', 'prod']
 
 // A const which represents 'all templates should be processed'
-@Field def allTemplates = "__ALL__"
+@Field def allTemplates = '__ALL__'
 
 // Map of service set name -> Jenkins location of deploy job for that service set
 @Field def deployJobs = [
-    approval: "/ops/deployApproval",
-    "automation-analytics": "/ops/deployAutomationAnalytics",
-    buildfactory: "/ops/deployBuildfactory",
-    catalog: "/ops/deployCatalog",
-    "ccx-data-pipeline": "/ops/deployCCX",
-    cloudigrade: "/ops/deployCloudigrade",
-    compliance: "/ops/deployCompliance",
-    policies: "/ops/deployPolicies",
-    drift: "/ops/deployDrift",
-    ros: "/ops/deployRos",
-    hccm: "/ops/deployHccm",
-    "historical-system-profiles": "/ops/deployHistoricalSystemProfiles",
-    ingress: "/ops/deployIngress",
-    inventory: "/ops/deployInventory",
-    marketplace: "/ops/deployMarketplace",
-    mnm: "/ops/deployMnm",
-    notifications: "/ops/deployNotifications",
-    patchman: "/ops/deployPatchman",
-    "payload-tracker": "/ops/deployPayloadTracker",
-    rbac: "/ops/deployRbac",
-    sources: "/ops/deploySources",
-    subscriptions: "/ops/deploySubscriptions",
-    "system-baseline": "/ops/deployBaseline",
-    "topological-inventory": "/ops/deployTopologicalInventory",
-    vmaas: "/ops/deployVmaas",
-    vulnerability: "/ops/deployVulnerability",
+    approval: '/ops/deployApproval',
+    'automation-analytics': '/ops/deployAutomationAnalytics',
+    buildfactory: '/ops/deployBuildfactory',
+    catalog: '/ops/deployCatalog',
+    'ccx-data-pipeline': '/ops/deployCCX',
+    cloudigrade: '/ops/deployCloudigrade',
+    compliance: '/ops/deployCompliance',
+    policies: '/ops/deployPolicies',
+    drift: '/ops/deployDrift',
+    ros: '/ops/deployRos',
+    hccm: '/ops/deployHccm',
+    'historical-system-profiles': '/ops/deployHistoricalSystemProfiles',
+    ingress: '/ops/deployIngress',
+    inventory: '/ops/deployInventory',
+    marketplace: '/ops/deployMarketplace',
+    mnm: '/ops/deployMnm',
+    notifications: '/ops/deployNotifications',
+    patchman: '/ops/deployPatchman',
+    'payload-tracker': '/ops/deployPayloadTracker',
+    rbac: '/ops/deployRbac',
+    sources: '/ops/deploySources',
+    subscriptions: '/ops/deploySubscriptions',
+    'system-baseline': '/ops/deployBaseline',
+    'topological-inventory': '/ops/deployTopologicalInventory',
+    vmaas: '/ops/deployVmaas',
+    vulnerability: '/ops/deployVulnerability',
 ]
 
-
 def getServiceDeployJobs() {
-    return deployJobs.findAll({ !it.key.equals("buildfactory") })
+    return deployJobs.findAll({ !it.key.equals('buildfactory') })
 }
 
-
-private def analyzeEnvFile(String envFile, Map changeInfo, String serviceSet, String specificEnv) {
+private analyzeEnvFile(String envFile, Map changeInfo, String serviceSet, String specificEnv) {
     def msg = "getChangeInfo: envFile is: ${envFile}"
-    msg += serviceSet ? " in service set ${serviceSet}" : ""
+    msg += serviceSet ? " in service set ${serviceSet}" : ''
     echo(msg)
 
-    if (envFile.endsWith(".yaml") || envFile.endsWith(".yml")) {
+    if (envFile.endsWith('.yaml') || envFile.endsWith('.yml')) {
         def envName = envFile.split("\\.")[0]
         echo "getChangeInfo: env file's name is: ${envName}"
 
@@ -80,8 +78,7 @@ private def analyzeEnvFile(String envFile, Map changeInfo, String serviceSet, St
     }
 }
 
-
-private def analyzeTemplateDir(
+private analyzeTemplateDir(
     String serviceSet, String dirName, Map changeInfo, Boolean ignoreRoot
 ) {
     echo "getChangeInfo: service set is ${serviceSet}"
@@ -95,12 +92,11 @@ private def analyzeTemplateDir(
     */
 
     // until there's a need ... always ignore root _cfg change for now to avoid mass deploys
-    if (!serviceSet.startsWith("_cfg")) changeInfo[dirName].add(serviceSet)
+    if (!serviceSet.startsWith('_cfg')) changeInfo[dirName].add(serviceSet)
 
     // Run diff using all default env files any time templates change
     changeInfo['envsForDiff'].addAll(defaultEnvs)
 }
-
 
 def getChangeInfo(parameters = [:]) {
     /**
@@ -134,19 +130,19 @@ def getChangeInfo(parameters = [:]) {
         def dir = splitPath[0]
         echo "getChangeInfo: dir is: ${dir}"
 
-        if (dir == "env") {
+        if (dir == 'env') {
             def envFileName = splitPath[1]
             analyzeEnvFile(envFileName, changeInfo, null, envName)
         }
-        else if (dir == "templates" || dir == "buildfactory") {
+        else if (dir == 'templates' || dir == 'buildfactory') {
             def serviceSet = splitPath[1]
 
             // Something in this service set changed, so process it...
             analyzeTemplateDir(serviceSet, dir, changeInfo, ignoreRoot)
 
             // Check if an env file changed at 'dir/serviceSet/env/file.yml'
-            if (splitPath.size() >= 4 && splitPath[2] == "env") {
-                echo "Analyzing service set env file"
+            if (splitPath.size() >= 4 && splitPath[2] == 'env') {
+                echo 'Analyzing service set env file'
                 envFileName = splitPath[3]
                 analyzeEnvFile(envFileName, changeInfo, serviceSet, envName)
             }
@@ -168,7 +164,6 @@ def getChangeInfo(parameters = [:]) {
     return changeInfo
 }
 
-
 def createDeployAllChangeInfo(String env) {
     // Return a changeinfo map that will cause all apps to be marked for deploy in the given 'env'
     return [
@@ -179,15 +174,14 @@ def createDeployAllChangeInfo(String env) {
     ]
 }
 
-
-private def getRemoteTask(buildJob, jobParameters, remoteCredentials, remoteHostname) {
+private getRemoteTask(buildJob, jobParameters, remoteCredentials, remoteHostname) {
     // Return a closure for running a build job on a remote jenkins master
 
     // Translate the params into a string assuming it is a list of Maps e.g.:
     // [[$class: StringParameterValue, name: "name", value: "value"]]
-    def paramsString = ""
+    def paramsString = ''
     for (Map p : jobParameters) {
-        paramsString = paramsString + "\n${p['name']}=${p['value'].toString()}"
+        paramsString = paramsString + "\n${p['name']}=${p['value']}"
     }
 
     // Translate the build job name into its URL format
@@ -195,8 +189,8 @@ private def getRemoteTask(buildJob, jobParameters, remoteCredentials, remoteHost
 
     closure = {
         withCredentials([
-            string(credentialsId: remoteCredentials, variable: "TOKEN"),
-            string(credentialsId: remoteHostname, variable: "REMOTE_HOSTNAME")
+            string(credentialsId: remoteCredentials, variable: 'TOKEN'),
+            string(credentialsId: remoteHostname, variable: 'REMOTE_HOSTNAME')
         ]) {
             triggerRemoteJob(
                 job: "https://${REMOTE_HOSTNAME}${fullUrlPath}",
@@ -208,7 +202,6 @@ private def getRemoteTask(buildJob, jobParameters, remoteCredentials, remoteHost
 
     return closure
 }
-
 
 def getDeployTask(parameters = [:]) {
     /**
@@ -228,8 +221,8 @@ def getDeployTask(parameters = [:]) {
     def setToDeploy = parameters['serviceSet']
     def envName = parameters['env']
     def remote = parameters.get('remote', false)
-    def remoteCredentials = parameters.get('remoteCredentials', "remoteJenkinsApiToken")
-    def remoteHostname = parameters.get('remoteHostname', "remoteJenkinsHostname")
+    def remoteCredentials = parameters.get('remoteCredentials', 'remoteJenkinsApiToken')
+    def remoteHostname = parameters.get('remoteHostname', 'remoteJenkinsHostname')
     def jobParameters = parameters.get(
         'jobParameters',
         [[$class: 'StringParameterValue', name: 'ENV', value: envName]]
@@ -245,11 +238,10 @@ def getDeployTask(parameters = [:]) {
 
     echo(
         "getDeployTask(): service set \'${setToDeploy}\' will trigger job \'${buildJob}\' " +
-        "with params \'${jobParameters.toString()}\' -- task is ${closure.toString()}"
+        "with params \'${jobParameters}\' -- task is ${closure}"
     )
     return closure
 }
-
 
 def createParallelTasks(parameters = [:]) {
     /**
@@ -269,8 +261,8 @@ def createParallelTasks(parameters = [:]) {
     def serviceSets = parameters['serviceSets']
     def envName = parameters['env']
     def remote = parameters['remote']
-    def remoteCredentials = parameters.get('remoteCredentials', "remoteJenkinsApiToken")
-    def remoteHostname = parameters.get('remoteHostname', "remoteJenkinsHostname")
+    def remoteCredentials = parameters.get('remoteCredentials', 'remoteJenkinsApiToken')
+    def remoteHostname = parameters.get('remoteHostname', 'remoteJenkinsHostname')
 
     def tasks = [:]
     for (String set : serviceSets) {
@@ -286,8 +278,7 @@ def createParallelTasks(parameters = [:]) {
     return tasks
 }
 
-
-private def createBuildfactoryTask(
+private createBuildfactoryTask(
     changeInfo, e2eDeployDir, remote, remoteCredentials, remoteHostname
 ) {
     // Get list of buildfactory service sets to deploy
@@ -311,7 +302,7 @@ private def createBuildfactoryTask(
     }
 
     return getDeployTask(
-        serviceSet: "buildfactory",
+        serviceSet: 'buildfactory',
         jobParameters: buildParams,
         remote: remote,
         remoteCredentials: remoteCredentials,
@@ -319,8 +310,7 @@ private def createBuildfactoryTask(
     )
 }
 
-
-private def createTemplateTasks(
+private createTemplateTasks(
     envName, changeInfo, e2eDeployDir, remote, remoteCredentials, remoteHostname
 ) {
     // If all templates are impacted by a change, re-deploy all services
@@ -353,7 +343,6 @@ private def createTemplateTasks(
     )
 }
 
-
 def getDeployTasksFromChangeInfo(parameters = [:]) {
     /**
      * Given change info (as returned by getChangeInfo), an env name, and the the path to the
@@ -378,16 +367,16 @@ def getDeployTasksFromChangeInfo(parameters = [:]) {
     def changeInfo = parameters['changeInfo']
     def envName = parameters['env']
     def remote = parameters['remote']
-    def remoteCredentials = parameters.get('remoteCredentials', "remoteJenkinsApiToken")
-    def remoteHostname = parameters.get('remoteHostname', "remoteJenkinsHostname")
+    def remoteCredentials = parameters.get('remoteCredentials', 'remoteJenkinsApiToken')
+    def remoteHostname = parameters.get('remoteHostname', 'remoteJenkinsHostname')
     def e2eDeployDir = parameters.get('e2eDeployDir', env.WORKSPACE)
 
     def parallelTasks = [:]
 
     // If env is CI or QA and a service set in buildfactory was updated, run the buildfactory
     // deploy job with the proper service sets selected
-    if ((envName.equals("ci") || envName.equals("qa")) && changeInfo['buildfactory']) {
-        parallelTasks["buildfactory"] = createBuildfactoryTask(
+    if ((envName.equals('ci') || envName.equals('qa')) && changeInfo['buildfactory']) {
+        parallelTasks['buildfactory'] = createBuildfactoryTask(
             changeInfo, e2eDeployDir, remote, remoteCredentials, remoteHostname
         )
     }
@@ -399,7 +388,6 @@ def getDeployTasksFromChangeInfo(parameters = [:]) {
     return parallelTasks
 }
 
-
 def installE2EDeploy() {
     gitUtils.checkOutRepo(
         targetDir: pipelineVars.e2eDeployDir,
@@ -407,10 +395,9 @@ def installE2EDeploy() {
         credentialsId: pipelineVars.gitSshCreds
     )
     dir(pipelineVars.e2eDeployDir) {
-        sh "pip install -r requirements.txt"
+        sh 'pip install -r requirements.txt'
     }
 }
-
 
 def deployServiceSet(parameters = [:]) {
     /**
@@ -420,25 +407,24 @@ def deployServiceSet(parameters = [:]) {
     def env = parameters.get('env')
     def project = parameters['project']
     def secretsSrcProject = parameters.get('secretsSrcProject')
-    def templateDir = parameters.get('templateDir', "templates")
+    def templateDir = parameters.get('templateDir', 'templates')
     def skip = parameters.get('skip')
     def pipInstall = parameters.get('pipInstall', true)
     def watch = parameters.get('watch', true)
 
     if (pipInstall) installE2EDeploy()
     dir(pipelineVars.e2eDeployDir) {
-        def watchArg = watch ? " -w " : " "
-        def envArg = env ? " -e ${env} " : " "
-        def secretsArg = secretsSrcProject ? " --secrets-src-project ${secretsSrcProject}" : " "
+        def watchArg = watch ? ' -w ' : ' '
+        def envArg = env ? " -e ${env} " : ' '
+        def secretsArg = secretsSrcProject ? " --secrets-src-project ${secretsSrcProject}" : ' '
         def cmd = (
             "ocdeployer deploy${watchArg}-f -t ${templateDir} " +
             "-s ${serviceSet}${envArg}${project}${secretsArg}"
         )
-        if (skip) cmd = "${cmd} --skip ${skip.join(",")}"
+        if (skip) cmd = "${cmd} --skip ${skip.join(',')}"
         sh cmd
     }
 }
-
 
 def skopeoCopy(parameters = [:]) {
     def srcUri = parameters['srcUri']
@@ -461,15 +447,14 @@ def skopeoCopy(parameters = [:]) {
     }
 }
 
-
-private def promoteToCluster(
+private promoteToCluster(
     srcImage, dstImage, srcCluster, srcProject, dstCluster, dstProject, srcSaUsername,
     srcSaTokenCredentialsId, dstSaUsername, dstSaTokenCredentialsId
 ) {
     /* Promotes images from a src OpenShift cluster to a dst OpenShift cluster */
-    def srcRegistry = srcCluster.replace("api", "registry")
-    def dstRegistry = dstCluster.replace("api", "registry")
-    def imageFormat = "docker://%s/%s/%s"
+    def srcRegistry = srcCluster.replace('api', 'registry')
+    def dstRegistry = dstCluster.replace('api', 'registry')
+    def imageFormat = 'docker://%s/%s/%s'
 
     def srcImageUri = String.format(imageFormat, srcRegistry, srcProject, srcImage)
     def dstImageUri = String.format(imageFormat, dstRegistry, dstProject, dstImage)
@@ -483,16 +468,15 @@ private def promoteToCluster(
     )
 }
 
-
-private def promoteToQuay(
+private promoteToQuay(
     srcImage, dstImage, srcCluster, srcProject, srcSaUsername, srcSaTokenCredentialsId, dstQuayUser,
     dstQuayTokenId
 ) {
     /* Promotes images from a src OpenShift cluster to quay */
-    def srcRegistry = srcCluster.replace("api", "registry")
-    def imageFormat = "docker://%s/%s/%s"
+    def srcRegistry = srcCluster.replace('api', 'registry')
+    def imageFormat = 'docker://%s/%s/%s'
     def srcImageUri = String.format(imageFormat, srcRegistry, srcProject, srcImage)
-    def dstImageUri = "docker://" + dstImage
+    def dstImageUri = 'docker://' + dstImage
 
     skopeoCopy(
         srcUri: srcImageUri,
@@ -503,7 +487,6 @@ private def promoteToQuay(
         dstTokenId: dstQuayTokenId,
     )
 }
-
 
 def promoteImages(parameters = [:]) {
     /**
@@ -535,21 +518,21 @@ def promoteImages(parameters = [:]) {
 
     def srcImages = parameters['srcImages']
     def dstImages = parameters.get('dstImages')
-    def srcProject = parameters.get('srcProject', "buildfactory")
+    def srcProject = parameters.get('srcProject', 'buildfactory')
     def srcCluster = parameters.get('srcCluster', pipelineVars.devCluster)
     def dstProject = parameters.get('dstProject')
     def dstCluster = parameters.get('dstCluster', pipelineVars.prodCluster)
-    def srcSaUsername = parameters.get('srcSaUsername', "jenkins-deployer")
+    def srcSaUsername = parameters.get('srcSaUsername', 'jenkins-deployer')
     def srcSaTokenCredentialsId = parameters.get(
-        'srcSaTokenCredentialsId', "buildfactoryDeployerToken"
+        'srcSaTokenCredentialsId', 'buildfactoryDeployerToken'
     )
-    def dstSaUsername = parameters.get('dstSaUsername', "jenkins-deployer")
+    def dstSaUsername = parameters.get('dstSaUsername', 'jenkins-deployer')
     def dstSaTokenCredentialsId = parameters.get('dstSaTokenCredentialsId')
-    def dstQuayUser = parameters.get("dstQuayUser", pipelineVars.quayUser)
-    def dstQuayTokenId = parameters.get("dstQuayTokenId", pipelineVars.quayPushCredentialsId)
+    def dstQuayUser = parameters.get('dstQuayUser', pipelineVars.quayUser)
+    def dstQuayTokenId = parameters.get('dstQuayTokenId', pipelineVars.quayPushCredentialsId)
 
     if (!dstImages) dstImages = srcImages
-    if (srcImages.size() != dstImages.size()) error("srcImages and dstImages must be the same size")
+    if (srcImages.size() != dstImages.size()) error('srcImages and dstImages must be the same size')
 
     srcImages.eachWithIndex { srcImage, i ->
         def dstImage = dstImages[i]

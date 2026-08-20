@@ -10,9 +10,9 @@
 * @param (optional) activationKey = RHSM activation key, usually used for Satellite hosts
 * @param (optional) org = Satellite Organization name
 */
-def getBeta(){
-    def beta = sh ( script: 'cat /etc/redhat-release | egrep -e "Alpha|Beta" > /dev/null', returnStatus: true)
-    if ( beta == 0){
+def getBeta() {
+    def beta = sh( script: 'cat /etc/redhat-release | egrep -e "Alpha|Beta" > /dev/null', returnStatus: true)
+    if ( beta == 0) {
         return true
     }
     else {
@@ -20,22 +20,22 @@ def getBeta(){
     }
 }
 
-def getRhelMajor(){
-    def major = sh ( script: 'cat /etc/redhat-release | sed "s/.*release //" | sed "s/ .*//" | awk -F. "{ print \\$1 }" | tr -d "\n"', returnStdout: true)
+def getRhelMajor() {
+    def major = sh( script: 'cat /etc/redhat-release | sed "s/.*release //" | sed "s/ .*//" | awk -F. "{ print \\$1 }" | tr -d "\n"', returnStdout: true)
     return major
 }
 
-def rhsmRegister(Map parameters = [:]){
-    def url = parameters.get("url", null)
-    def credentialId = parameters.get("credentialId", null)
-    def poolId = parameters.get("poolId", null)
-    def satellite = parameters.get("satellite", null)
-    def activationKey = parameters.get("activationKey", null)
-    def org = parameters.get("org", null)
+def rhsmRegister(Map parameters = [:]) {
+    def url = parameters.get('url', null)
+    def credentialId = parameters.get('credentialId', null)
+    def poolId = parameters.get('poolId', null)
+    def satellite = parameters.get('satellite', null)
+    def activationKey = parameters.get('activationKey', null)
+    def org = parameters.get('org', null)
 
-    if(poolId){
+    if (poolId) {
         withCredentials([usernamePassword(credentialsId: credentialId, usernameVariable: 'username', passwordVariable: 'password')]) {
-            echo "Subscribing machine with poolId..."
+            echo 'Subscribing machine with poolId...'
             sh """
                 subscription-manager register --serverurl=${url} --username=${username} --password=${password}
                 subscription-manager attach --pool=${poolId}
@@ -43,8 +43,8 @@ def rhsmRegister(Map parameters = [:]){
             """
         }
     }
-    else if (satellite){
-        echo "Subscribing machine to Satellite ..."
+    else if (satellite) {
+        echo 'Subscribing machine to Satellite ...'
         sh """
             rpm -Uvh http://\$${satellite}/pub/katello-ca-consumer-\$${satellite}-1.0-1.noarch.rpm
             subscription-manager register --org=${org} --activationkey=${activationKey}
@@ -53,9 +53,9 @@ def rhsmRegister(Map parameters = [:]){
     }
     else {
         withCredentials([usernamePassword(credentialsId: credentialId, usernameVariable: 'username', passwordVariable: 'password')]) {
-            echo "Subscribing machine to Cloud..."
-            if(getBeta().toBoolean()){
-                echo "We are on beta, do not auto attach subscription..."
+            echo 'Subscribing machine to Cloud...'
+            if (getBeta().toBoolean()) {
+                echo 'We are on beta, do not auto attach subscription...'
                 sh """
                     subscription-manager register --serverurl=${url} --username=${username} --password=${password} --force
                     subscription-manager refresh
@@ -63,8 +63,8 @@ def rhsmRegister(Map parameters = [:]){
             }
             ver = getRhelMajor()
             echo "RHEL version is: _${ver}_"
-            if(getRhelMajor() == "6"){
-                echo "Do not auto attach on RHEL6"
+            if (getRhelMajor() == '6') {
+                echo 'Do not auto attach on RHEL6'
                 sh """
                     subscription-manager register --serverurl=${url} --username=${username} --password=${password} --force
                     subscription-manager refresh
@@ -80,63 +80,59 @@ def rhsmRegister(Map parameters = [:]){
     }
 }
 
-
-def rhsmUnregister(){
-    def registered = sh ( script: "subscription-manager identity", returnStatus: true)
-    if(registered == 0){
-        echo "Machine is registered, unregistering..."
+def rhsmUnregister() {
+    def registered = sh( script: 'subscription-manager identity', returnStatus: true)
+    if (registered == 0) {
+        echo 'Machine is registered, unregistering...'
         sh '''
             subscription-manager remove --all
             subscription-manager unregister
             subscription-manager clean
         '''
     }
-    def katelloInstalled = sh ( script: "yum list installed katello-ca-consumer-*", returnStatus: true)
-    if(katelloInstalled == 0){
-        echo "Katello RPM is installed - uninstallling it..."
+    def katelloInstalled = sh( script: 'yum list installed katello-ca-consumer-*', returnStatus: true)
+    if (katelloInstalled == 0) {
+        echo 'Katello RPM is installed - uninstallling it...'
         sh '''
             yum remove -y katello-ca-consumer*
         '''
     }
 }
 
-
-def rhsmList(){
-    sh "subscription-manager list --available"
+def rhsmList() {
+    sh 'subscription-manager list --available'
 }
 
-
-def rhsmStatus(){
-    sh "subscription-manager status"
+def rhsmStatus() {
+    sh 'subscription-manager status'
 }
 
+def installRpm(Map parameters = [:]) {
+    def rpmName = parameters.get('rpmName', null)
+    def url = parameters.get('url', null)
+    def brewBuildId = parameters.get('brewBuildId', null)
+    def brewNVR = parameters.get('brewNVR', null)
+    def architecture = parameters.get('architecture', 'x86_64')
 
-def installRpm(Map parameters = [:]){
-    def rpmName = parameters.get("rpmName", null)
-    def url = parameters.get("url", null)
-    def brewBuildId = parameters.get("brewBuildId",null)
-    def brewNVR = parameters.get("brewNVR", null)
-    def architecture = parameters.get("architecture", "x86_64")
+    def checkInstalled = sh( script: "rpm -qa | grep ${rpmName}", returnStatus: true)
 
-    def checkInstalled = sh ( script: "rpm -qa | grep ${rpmName}", returnStatus: true)
-
-    if(checkInstalled == 0){
+    if (checkInstalled == 0) {
         sh """
         yum remove -y ${rpmName}
         """
-        if ("${rpmName}" == "insights-client"){
-            sh """
+        if ("${rpmName}" == 'insights-client') {
+            sh '''
             rm -rf /etc/insights-client
-            """
+            '''
         }
     }
 
-    if(url){
+    if (url) {
         sh """
             yum install -y ${url}
         """
     }
-    if(brewBuildId){
+    if (brewBuildId) {
         sh """
         cd /tmp
         brew download-build --noprogress --arch=${architecture} --debuginfo ${brewBuildId}
@@ -144,12 +140,12 @@ def installRpm(Map parameters = [:]){
         """
     }
     else {
-        if("${rpmName}" == "yggdrasil"){
-        sh """
+        if ("${rpmName}" == 'yggdrasil') {
+            sh '''
             yum copr enable -y linkdupont/yggdrasil
             yum copr enable -y jcrafts/rhc-worker-playbook
             yum install -y yggdrasil rhc-worker-playbook
-        """
+        '''
         }
         sh """
             yum install -y ${rpmName}
@@ -157,10 +153,9 @@ def installRpm(Map parameters = [:]){
     }
 }
 
-
-def collectSystemArtifacts(){
-    def sysinfoFileExists = sh ( script: 'test -f \$(hostname).txt', returnStatus: true)
-    if(sysinfoFileExists == 0){
+def collectSystemArtifacts() {
+    def sysinfoFileExists = sh( script: 'test -f \$(hostname).txt', returnStatus: true)
+    if (sysinfoFileExists == 0) {
         sh """
             rm -rf \$(hostname).txt
         """
@@ -179,10 +174,9 @@ def collectSystemArtifacts(){
     archiveArtifacts artifacts: '*.txt'
 }
 
-
-def setupVenvDir(){
-    def checkVenvInstalled = sh ( script: 'test -d /iqe_venv', returnStatus: true)
-    if(checkVenvInstalled == 0){
+def setupVenvDir() {
+    def checkVenvInstalled = sh( script: 'test -d /iqe_venv', returnStatus: true)
+    if (checkVenvInstalled == 0) {
         return '/iqe_venv'
     }
     else {
@@ -190,38 +184,37 @@ def setupVenvDir(){
     }
 }
 
-
-def setupIqePlugin(Map parameters = [:]){
-    def plugin = parameters.get("plugin")
-    def iqeCoreBranch = parameters.get("iqeCoreBranch" , "3.0")
-    def iqePluginBranch = parameters.get("iqePluginBranch", "master")
-    def satelliteInstance = parameters.get("satelliteInstance" , "satellite_69")
+def setupIqePlugin(Map parameters = [:]) {
+    def plugin = parameters.get('plugin')
+    def iqeCoreBranch = parameters.get('iqeCoreBranch' , '3.0')
+    def iqePluginBranch = parameters.get('iqePluginBranch', 'master')
+    def satelliteInstance = parameters.get('satelliteInstance' , 'satellite_69')
     def jenkinsCredentials = null
     def vaultEnabled = false
 
     venvDir = setupVenvDir()
-    if(plugin == 'insights-client') {
+    if (plugin == 'insights-client') {
         git credentialsId: 'gitlab', url: 'https://gitlab.cee.redhat.com/insights-qe/iqe-insights-client-plugin.git', branch: iqePluginBranch
         plugin_dir = 'iqe_insights_client'
         jenkinsCredentials = 'settings_iqe_insights_client'
         vaultEnabled = true
     }
-    else if(plugin.contains('rhc')){
+    else if (plugin.contains('rhc')) {
         git credentialsId: 'gitlab', url: 'https://gitlab.cee.redhat.com/insights-qe/iqe-rhc-client-plugin.git', branch: iqePluginBranch
         vaultEnabled = true
     }
-    else if(plugin.contains('iqe-satellite-plugin')){
+    else if (plugin.contains('iqe-satellite-plugin')) {
         git credentialsId: 'gitlab', url: 'https://gitlab.cee.redhat.com/insights-qe/iqe-satellite-plugin.git', branch: iqePluginBranch
         plugin_dir = 'iqe-satellite-plugin'
         plugin_dir = 'iqe_insights_satellite'
         jenkinsCredentials = 'settings_iqe_satellite'
     }
     else {
-        println("Unknown plugin string passed...")
+        println('Unknown plugin string passed...')
         currentBuild.result = 'FAILURE'
     }
 
-    if("${venvDir}" == '/iqe_venv'){
+    if ("${venvDir}" == '/iqe_venv') {
         sh """
             echo "/iqe_venv exists, reusing it"
             source ${venvDir}/bin/activate
@@ -231,7 +224,7 @@ def setupIqePlugin(Map parameters = [:]){
         """
     }
     else {
-        sh """
+        sh '''
             echo "/iqe_venv does not exist, creating new venv..."
             git config --global http.sslVerify false
             python3 -m venv venv
@@ -241,15 +234,15 @@ def setupIqePlugin(Map parameters = [:]){
             pip install -U pip setuptools wheel
             pip install setuptools_scm iqe-core
             iqe plugin install --editable .
-        """
+        '''
     }
-    if(plugin == 'insights-client') {
+    if (plugin == 'insights-client') {
         sh """
             source ${venvDir}/bin/activate
             pip install git+https://github.com/RedHatInsights/insights-core.git@${iqeCoreBranch}
         """
     }
-    else if(plugin.contains('rhc')) {
+    else if (plugin.contains('rhc')) {
         sh """
             source ${venvDir}/bin/activate
             pip install --editable .[client]
@@ -271,18 +264,18 @@ def setupIqePlugin(Map parameters = [:]){
     }
 }
 
-def setupIqeAnsible(String iqeAnsibleBranch='master'){
+def setupIqeAnsible(String iqeAnsibleBranch='master') {
     venvDir = setupVenvDir()
     git credentialsId: 'gitlab', url: 'https://gitlab.cee.redhat.com/insights-qe/iqe-ansible.git', branch: "${iqeAnsibleBranch}"
 
-    if("${venvDir}" != '/iqe_venv'){
-        sh """
+    if ("${venvDir}" != '/iqe_venv') {
+        sh '''
             git config --global http.sslVerify false
             python3 -m venv venv
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
-        """
+        '''
     }
     sh """
         echo ${venvDir}
@@ -291,78 +284,77 @@ def setupIqeAnsible(String iqeAnsibleBranch='master'){
     """
 
     withCredentials([file(credentialsId: 'settings_iqe_ansible', variable: 'settings')]) {
-        sh "pwd"
-        sh "ls -ltr"
+        sh 'pwd'
+        sh 'ls -ltr'
         sh "cp \$settings insights-client/vars/settings.local.yaml"
     }
 }
 
-
-def runTests(Map parameters = [:]){
-    def plugin = parameters.get("plugin")
-    def env = parameters.get("env", null)
-    def pytestParam = parameters.get("pytestParam", null)
-    def satelliteInstance = parameters.get("satelliteInstance", null)
-    def iqeVmRhel = parameters.get("iqeVmRhel", null)
-    def ibutsuData = parameters.get("ibutsuData", null)
-    if (iqeVmRhel){
+def runTests(Map parameters = [:]) {
+    def plugin = parameters.get('plugin')
+    def env = parameters.get('env', null)
+    def pytestParam = parameters.get('pytestParam', null)
+    def satelliteInstance = parameters.get('satelliteInstance', null)
+    def iqeVmRhel = parameters.get('iqeVmRhel', null)
+    def ibutsuData = parameters.get('ibutsuData', null)
+    if (iqeVmRhel) {
         replaced_rhel_string = iqeVmRhel.replaceAll( /rhel/, 'rhel_' )
     }
     else {
         replaced_rhel_string = null
     }
-    def ibutsu = parameters.get("ibutsu", true)
+    def ibutsu = parameters.get('ibutsu', true)
     def reportportal = parameters.get('reportportal', false)
 
-        venvDir = setupVenvDir()
-        if (plugin == 'insights-client') {
-            plugin_test = 'insights_client'
-        }
+    venvDir = setupVenvDir()
+    if (plugin == 'insights-client') {
+        plugin_test = 'insights_client'
+    }
         else if (plugin == 'rhc') {
-            plugin_test = 'rhc_client'
-            pytestParam = "${pytestParam} -k test_client"
+        plugin_test = 'rhc_client'
+        pytestParam = "${pytestParam} -k test_client"
         }
         else if (plugin == 'rhc-worker-playbook') {
-            plugin_test = 'rhc_client'
-            pytestParam = "${pytestParam} -m worker_playbook"
-            // start python web server with playbook
-            sh """
+        plugin_test = 'rhc_client'
+        pytestParam = "${pytestParam} -m worker_playbook"
+        // start python web server with playbook
+        sh '''
                 ls -ltr ./
                 cd iqe_rhc_client/resources/playbooks
                 nohup python -m http.server 8000 > /dev/null 2>&1 &
-            """
+            '''
         }
         // ibutsu configuration moved to test execution section to use environment variables
 
-        if (reportportal) {
-            pytestParam = "${pytestParam} --reportportal"
-        }
+    if (reportportal) {
+        pytestParam = "${pytestParam} --reportportal"
+    }
 
-        // iqe tests plugin ${plugin_test} --junitxml=junit.xml --disable-pytest-warnings -srxv ${pytestParam}
-        sh """
+    // iqe tests plugin ${plugin_test} --junitxml=junit.xml --disable-pytest-warnings -srxv ${pytestParam}
+    sh """
             set +x && export \$(cat "${WORKSPACE}/.env" | xargs) && set -x
             export SATELLITE_INSTANCE=${satelliteInstance}
             export IQE_VM_RHEL=${replaced_rhel_string}
-            ${ibutsu ? "export IBUTSU_MODE=\"https://ibutsu-api.insights.corp.redhat.com/\"" : ""}
-            ${ibutsu ? "export IBUTSU_PROJECT=\"insights-qe\"" : ""}
-            ${ibutsu ? "export IBUTSU_SOURCE=\"stg-jenkins\"" : ""}
-            ${ibutsu && (env || ibutsuData) ? "export IBUTSU_DATA=\"${env ? "env=${env}" : ""}${env && ibutsuData ? " " : ""}${ibutsuData ?: ""}\"" : ""}
+            ${ibutsu ? "export IBUTSU_MODE=\"https://ibutsu-api.insights.corp.redhat.com/\'' : ""}
+            ${ibutsu ? "export IBUTSU_PROJECT=\"insights-qe\'' : ""}
+            ${ibutsu ? "export IBUTSU_SOURCE=\"stg-jenkins\'' : ""}
+            ${ibutsu && (env || ibutsuData) ? "export IBUTSU_DATA=\"${env ? "env=${env}" : ''}${env && ibutsuData ? ' ' : ''}${ibutsuData ?: ''}\'' : ""}
             source ${venvDir}/bin/activate
             iqe tests plugin ${plugin_test} --junitxml=junit.xml --disable-pytest-warnings -srxv ${pytestParam} -vvv --capture=sys
-        """
+        '''
 }
 
-def runAnsible(String playbookFile, String playbookTags=null){
-        echo "Running ansible..."
-        venvDir = setupVenvDir()
-        if(playbookTags){
-            play_command = "ansible-playbook ${playbookFile} --tags test,${playbookTags}"
-        }
+def runAnsible(String playbookFile, String playbookTags=null) {
+    echo 'Running ansible...'
+    venvDir = setupVenvDir()
+    if (playbookTags) {
+        play_command = "ansible-playbook ${playbookFile} --tags test,${playbookTags}"
+    }
         else {
-            play_command = "ansible-playbook ${playbookFile} --tags test"
+        play_command = "ansible-playbook ${playbookFile} --tags test"
         }
 
-        sh """
+    sh '''
             cd insights-client/
             cp -pr hosts_localhost hosts
             source ${venvDir}/bin/activate
@@ -370,12 +362,11 @@ def runAnsible(String playbookFile, String playbookTags=null){
             export JUNIT_OUTPUT_DIR="${WORKSPACE}/"
             ${play_command}
         """
-
 }
 
-def copySshKey(Map parameters = [:]){
-    def sshKey = parameters.get("sshKey", 'ssh_credentials_remediations_fifi')
-    def sshKeyName = parameters.get("sshKeyName", 'insights-qa.pem')
+def copySshKey(Map parameters = [:]) {
+    def sshKey = parameters.get('sshKey', 'ssh_credentials_remediations_fifi')
+    def sshKeyName = parameters.get('sshKeyName', 'insights-qa.pem')
     withCredentials([file(credentialsId: sshKey, variable: 'settings')]) {
         sh "cp \$settings ~/.ssh/${sshKeyName}"
     }

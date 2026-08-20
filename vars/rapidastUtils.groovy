@@ -1,16 +1,15 @@
-@Library("github.com/RedHatInsights/insights-pipeline-lib@master") _
+@Library('github.com/RedHatInsights/insights-pipeline-lib@master') _
 
 def slackMessage
 
 def prepareRapidastStages(String ServiceName, String PluginName, String ApiScanner, String TargetUrl, String ApISpecUrl, String Jira, String Cloud=pipelineVars.upshiftCloud, String Namespace=pipelineVars.upshiftNameSpace, String VaultSecretPath = 'insights/secrets/qe/stage/swatch/rapidast_user') {
     openShiftUtils.withNode(cloud: Cloud, namespace: Namespace, image: 'quay.io/redhatproductsecurity/rapidast:2.12.1', resourceRequestMemory: '1Gi', resourceLimitMemory: '4Gi') {
-
         stage("Set Build Rapidast for ${ServiceName} service") {
-             currentBuild.displayName = "#"+ env.BUILD_NUMBER + " " + "${ServiceName}"
+            currentBuild.displayName = '#' + env.BUILD_NUMBER + ' ' + "${ServiceName}"
         }
 
         stage("Prepare configs for ${ServiceName} Service") {
-             parse_rapidast_options("${ServiceName}","${ApiScanner}","${TargetUrl}","${ApISpecUrl}")
+            parse_rapidast_options("${ServiceName}", "${ApiScanner}", "${TargetUrl}", "${ApISpecUrl}")
         }
 
         stage("Run Rapidast for ${ServiceName} service") {
@@ -35,9 +34,9 @@ def prepareRapidastStages(String ServiceName, String PluginName, String ApiScann
                     def cmd_status = splLines[-1]
 
                     if (cmd_status.toInteger() != 0) {
-                        echo "======================================================="
+                        echo '======================================================='
                         echo "rapidast command failed with error message ${results_rapidast}"
-                        echo "======================================================="
+                        echo '======================================================='
                     }
                     else {
                         echo "STDOUT: ${results_rapidast}"
@@ -52,7 +51,7 @@ def prepareRapidastStages(String ServiceName, String PluginName, String ApiScann
 
                     if (warnNewFound) {
                         if (warnNewCount == '0') {
-                            echo "WARN-NEW is 0."
+                            echo 'WARN-NEW is 0.'
                         } else {
                             def slackMessage = ("""
                                 WARN-NEW is not 0.
@@ -64,24 +63,21 @@ def prepareRapidastStages(String ServiceName, String PluginName, String ApiScann
                             env.slackMessage = slackMessage
 
                             echo "${slackMessage}"
-                            currentBuild.result = "UNSTABLE"
-
+                            currentBuild.result = 'UNSTABLE'
                         }
                     } else {
-                        echo "WARN-NEW not found in the output."
+                        echo 'WARN-NEW not found in the output.'
                     }
-
                 }
-
             }
         }
 
-        stage("Collect artifacts") {
+        stage('Collect artifacts') {
             archiveArtifacts allowEmptyArchive: true, artifacts: "results/${ServiceName}/**/zap/*.*, , results.html, config/config.yaml"
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: true, reportDir: '', reportFiles: 'results/*/*/zap/*.html', reportName: 'report', reportTitles: '${ServiceName} Rapidast Scanner Report'])
         }
 
-        stage("Send data to Sitreps Grafana") {
+        stage('Send data to Sitreps Grafana') {
             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                 // There is a a dir that contains a timestamp which would be harder to predict, instead try to find resource.
                 def json_file = findFiles(glob: "results/${ServiceName}/**/zap/zap-report.json")[0]
@@ -110,22 +106,22 @@ def prepareRapidastStages(String ServiceName, String PluginName, String ApiScann
             }
         }
 
-        stage("Create Jira tickets for alerts") {
+        stage('Create Jira tickets for alerts') {
             //Typecast Jira from String to Hashmap for easier usage
             jiraMap = StringToMap(Jira)
             if (jiraMap) {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                     def sarif_file = findFiles(glob: "results/${ServiceName}/**/zap/zap-report.sarif.json")[0]
-                    sh "git -c http.sslVerify=false clone https://gitlab.cee.redhat.com/fcanogab/sariftojira"
-                    dir("sariftojira") {
+                    sh 'git -c http.sslVerify=false clone https://gitlab.cee.redhat.com/fcanogab/sariftojira'
+                    dir('sariftojira') {
                         withCredentials([string(credentialsId: 'JIRA_TOKEN', variable: 'JIRA_TOKEN')]) {
                             withEnv(['JIRA_EMAIL=insights-qe-jira-bot@redhat.com']) {
                                 jira_component = (jiraMap.Component == null) ? '' : "-jc ${jiraMap.Component}"
                                 jira_labels =  (jiraMap.Labels == null) ? '' : "-jl ${jiraMap.Labels}"
-                                sh "mv false_positives.json.example false_positives.json"
+                                sh 'mv false_positives.json.example false_positives.json'
                                 //Install dependencies python jira module via pip
-                                echo "Installing pip and Jira module"
-                                sh "python3 -m venv . && source bin/activate && pip install pyyaml jira"
+                                echo 'Installing pip and Jira module'
+                                sh 'python3 -m venv . && source bin/activate && pip install pyyaml jira'
                                 sh "source bin/activate && python3 sarif_to_jira.py -p ${ServiceName} -t dast -s ../${sarif_file} -jp ${jiraMap.Project} -ja ${jiraMap.Assignee} ${jira_labels} ${jira_component} -u ${TargetUrl}"
                             }
                         }
@@ -137,22 +133,21 @@ def prepareRapidastStages(String ServiceName, String PluginName, String ApiScann
             }
         }
 
-        stage("Send slack message if build is UNSTABLE"){
-            if (currentBuild.result == "UNSTABLE") {
+        stage('Send slack message if build is UNSTABLE') {
+            if (currentBuild.result == 'UNSTABLE') {
                 jiraMap = StringToMap(Jira)
                 if (jiraMap) {
                     if (jiraMap.Assignee != null) {
-                        slackUtils.sendMsg([msg: "${env.slackMessage}", slackChannel: "@" + jiraMap.Assignee, slackTokenCredentialId: 'slackToken'])
+                        slackUtils.sendMsg([msg: "${env.slackMessage}", slackChannel: '@' + jiraMap.Assignee, slackTokenCredentialId: 'slackToken'])
                     }
                 }
                 else {
-                    echo "Assignee key/value pair not defined in groovy file."
+                    echo 'Assignee key/value pair not defined in groovy file.'
                 }
             }
         }
     }
- }
-
+}
 
 def parse_rapidast_options(String ServiceName, String ApiScanner, String TargetUrl, String ApISpecUrl) {
     // RapiDAST configuration template
@@ -213,31 +208,31 @@ def parse_rapidast_options(String ServiceName, String ApiScanner, String TargetU
         """
 
         def data = readYaml text: rapidastConfigTemplate
-        if ("${ApiScanner}" == "OpenApiScan") {
-            echo "OpenAPI Spec Compliant API Scan selected"
+        if ("${ApiScanner}" == 'OpenApiScan') {
+            echo 'OpenAPI Spec Compliant API Scan selected'
 
             data.scanners.zap.remove('graphql')
 
             // Workaround for SWATCH-2347
-            if ("${ServiceName}" == "CostManagement") {
+            if ("${ServiceName}" == 'CostManagement') {
                 sh "redocly bundle ${ApISpecUrl} -o resolved.redocly.json"
-                data.scanners.zap.apiScan.apis.apiFile = "resolved.redocly.json"
+                data.scanners.zap.apiScan.apis.apiFile = 'resolved.redocly.json'
                 data.scanners.zap.apiScan.apis.remove('apiUrl')
             }
-            else if ("${ServiceName}" == "Host-Inventory") {
-                echo "Using HBI workaround to clean the json for recursion"
-                sh "curl --proxy squid.corp.redhat.com:3128 https://console.stage.redhat.com/api/inventory/v1/openapi.json -o test.json"
+            else if ("${ServiceName}" == 'Host-Inventory') {
+                echo 'Using HBI workaround to clean the json for recursion'
+                sh 'curl --proxy squid.corp.redhat.com:3128 https://console.stage.redhat.com/api/inventory/v1/openapi.json -o test.json'
                 sh "python3 ${pipelineVars.rapidastBinDirectory}/utils/remove_openapi_ref_recursion.py -f test.json"
-                data.scanners.zap.apiScan.apis.apiFile = "cleaned_openapi.json"
+                data.scanners.zap.apiScan.apis.apiFile = 'cleaned_openapi.json'
                 data.scanners.zap.apiScan.apis.remove('apiUrl')
             }
-                if ("${ServiceName}" == "OcpVulnerability") {
+                if ("${ServiceName}" == 'OcpVulnerability') {
                 def policy = 'scanners/zap/policies/API-scan-minimal.policy'
                 sh "sed -z -i 's|<p40018>\\n            <enabled>true|<p40018>\\n            <enabled>false|' ${policy}"
-            }
+                }
         }
-        else if ("${ApiScanner}" == "graphql") {
-            echo "GraphQL API Scan selected"
+        else if ("${ApiScanner}" == 'graphql') {
+            echo 'GraphQL API Scan selected'
 
             data.scanners.zap.remove('apiScan')
         }
@@ -248,10 +243,9 @@ def parse_rapidast_options(String ServiceName, String ApiScanner, String TargetU
 
         // Create configuration file from the YAML config
         writeYaml file: 'config/config.yaml', data:data
-        echo "Configuration Value: " + data
+        echo 'Configuration Value: ' + data
     }
 }
-
 
 def StringToMap(String JiraString) {
     if (JiraString == '[:]') {
