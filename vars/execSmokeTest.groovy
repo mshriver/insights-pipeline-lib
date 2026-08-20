@@ -32,14 +32,12 @@
  *
  */
 
-
-private def getRefSpec() {
+private getRefSpec() {
     // get refspec so we can set up the OpenShift build config to point to this PR
     return "refs/pull/${env.CHANGE_ID}/merge"
 }
 
-
-private def deployEnvironment(
+private deployEnvironment(
     refSpec, project, ocDeployerBuilderPath, ocDeployerComponentPath, ocDeployerServiceSets,
     buildScaleFactor, deployScaleFactor, scaleFirstSetOnly, parallelBuild
 ) {
@@ -55,7 +53,7 @@ private def deployEnvironment(
         to use the image produced by the above custom build config
      * Deploys the specified `ocDeployerServiceSets` using the above config
      */
-    stage("Create env files") {
+    stage('Create env files') {
         // deploy custom build config that points to this app's PR code
         def customBuildYaml = (
             """
@@ -64,8 +62,8 @@ private def deployEnvironment(
                     SOURCE_REPOSITORY_REF: ${refSpec}
             """
         ).stripIndent()
-        writeFile file: "env/builder-env.yml", text: customBuildYaml
-        sh "cat env/builder-env.yml"
+        writeFile file: 'env/builder-env.yml', text: customBuildYaml
+        sh 'cat env/builder-env.yml'
 
         // set image for the PR app to be pulled from this local namespace
         def customAppYaml = (
@@ -76,8 +74,8 @@ private def deployEnvironment(
                     IMAGE_TAG: latest
             """
         ).stripIndent()
-        writeFile file: "env/custom-env.yml", text: customAppYaml
-        sh "cat env/custom-env.yml"
+        writeFile file: 'env/custom-env.yml', text: customAppYaml
+        sh 'cat env/custom-env.yml'
     }
 
     def deployTasks = [:]
@@ -85,7 +83,7 @@ private def deployEnvironment(
     // Deploy the builder for only this app to build the PR image in this project
     // Make this a closure so we can decide whether to run it stand-alone or in parallel later...
     def buildTask = {
-        def pickArg = ocDeployerBuilderPath.contains("/") ? "-p" : "-s"
+        def pickArg = ocDeployerBuilderPath.contains('/') ? '-p' : '-s'
         // use --scale-resources to beef up the build resources to help the app build quickly
         sh(
             "ocdeployer deploy -w -f -l e2esmoke=true ${pickArg} " +
@@ -99,7 +97,7 @@ private def deployEnvironment(
     // then the build can be run prior to the app deployment
     if (parallelBuild) deployTasks['Deploy buildConfig'] = buildTask
     else {
-        stage("Deploy buildConfig") {
+        stage('Deploy buildConfig') {
             buildTask()
         }
     }
@@ -124,29 +122,27 @@ private def deployEnvironment(
     parallel(deployTasks)
 }
 
-
-private def wipeNamespace(project) {
+private wipeNamespace(project) {
     // wipe all resources that have label 'e2esmoke=true'
-    stage("Wipe test environment") {
+    stage('Wipe test environment') {
         sh "ocdeployer wipe -l e2esmoke=true --no-confirm ${project}"
     }
 }
 
-
-private def runDeployStages(
+private runDeployStages(
     refSpec, project, ocDeployerBuilderPath, ocDeployerComponentPath,
     ocDeployerServiceSets, buildScaleFactor, deployScaleFactor,
     scaleFirstSetOnly, parallelBuild
 ) {
     // check out e2e-deploy
-    stage("Check out e2e-deploy") {
+    stage('Check out e2e-deploy') {
         gitUtils.checkOutRepo(
             targetDir: pipelineVars.e2eDeployDir,
             repoUrl: pipelineVars.e2eDeployRepo,
-            credentialsId: "InsightsDroidGitHubHTTP"
+            credentialsId: 'InsightsDroidGitHubHTTP'
         )
         dir(pipelineVars.e2eDeployDir) {
-            sh "pip install -r requirements.txt"
+            sh 'pip install -r requirements.txt'
         }
     }
 
@@ -162,22 +158,21 @@ private def runDeployStages(
         }
         return true
     } catch (err) {
-        echo("Hit error during deploy!")
+        echo('Hit error during deploy!')
         echo(err.toString())
         return false
     }
 }
 
-
-private def runPipeline(
+private runPipeline(
     refSpec, ocDeployerBuilderPath, ocDeployerComponentPath, ocDeployerServiceSets,
     buildScaleFactor, deployScaleFactor, scaleFirstSetOnly, parallelBuild, options, appConfigs
 ) {
     def results
     // Reserve a smoke test project, spin up a slave pod, and run the test pipeline
-    lock(label: pipelineVars.smokeTestResourceLabel, quantity: 1, variable: "PROJECT") {
+    lock(label: pipelineVars.smokeTestResourceLabel, quantity: 1, variable: 'PROJECT') {
         pipelineUtils.cancelPriorBuilds()
-        currentBuild.result = "SUCCESS"
+        currentBuild.result = 'SUCCESS'
 
         def project = env.PROJECT
         echo "Using project: ${project}"
@@ -204,7 +199,7 @@ private def runPipeline(
             }
 
             if (!deployed || results['failed']) {
-                stage("Collecting logs") {
+                stage('Collecting logs') {
                     openShiftUtils.collectLogs(project: project)
                 }
             }
@@ -212,13 +207,13 @@ private def runPipeline(
             wipeNamespace(project)
         }
 
-        stage("Final result") {
-            if (!results) error("Found no test results")
+        stage('Final result') {
+            if (!results) error('Found no test results')
             def totalResults = results['success'].size() + results['failed'].size()
-            if (totalResults != appConfigs.keySet().size()) error("Did not find test results for expected number of apps")
+            if (totalResults != appConfigs.keySet().size()) error('Did not find test results for expected number of apps')
 
-            if (currentBuild.result != "SUCCESS" || results['failed'].size() > 0) {
-                error("Smoke test failed");
+            if (currentBuild.result != 'SUCCESS' || results['failed'].size() > 0) {
+                error('Smoke test failed')
             }
         }
     }
@@ -226,10 +221,9 @@ private def runPipeline(
     return results
 }
 
-
-private def setParamDefaults(refSpec, pytestMarker, pytestFilter, extraJobProperties) {
+private setParamDefaults(refSpec, pytestMarker, pytestFilter, extraJobProperties) {
     if (pytestMarker instanceof java.util.ArrayList) {
-        pytestMarker = pytestMarker.join(" or ")
+        pytestMarker = pytestMarker.join(' or ')
     }
 
     def jobProperties = [
@@ -241,17 +235,17 @@ private def setParamDefaults(refSpec, pytestMarker, pytestFilter, extraJobProper
                     description: 'The git ref to deploy for this app during the smoke test'
                 ),
                 string(
-                    name: "MARKER",
-                    defaultValue: pytestMarker ? pytestMarker : "",
-                    description: "Enter pytest marker expression (-m), leave blank for none"
+                    name: 'MARKER',
+                    defaultValue: pytestMarker ? pytestMarker : '',
+                    description: 'Enter pytest marker expression (-m), leave blank for none'
                 ),
                 string(
-                    name: "FILTER",
-                    defaultValue: pytestFilter ? pytestFilter : "",
-                    description: "Enter pytest filter expression (-k), leave blank for none"
+                    name: 'FILTER',
+                    defaultValue: pytestFilter ? pytestFilter : '',
+                    description: 'Enter pytest filter expression (-k), leave blank for none'
                 ),
                 booleanParam(
-                    name: "RELOAD",
+                    name: 'RELOAD',
                     defaultValue: false,
                     description: "Reload this job's pipeline file and quit"
                 )
@@ -262,7 +256,6 @@ private def setParamDefaults(refSpec, pytestMarker, pytestFilter, extraJobProper
     jobProperties.addAll(extraJobProperties)
     properties(jobProperties)
 }
-
 
 def call(p = [:]) {
     /*
@@ -309,14 +302,14 @@ def call(p = [:]) {
     def pytestFilter = p.get('pytestFilter')
     def iqePlugins = p.get('iqePlugins')
     def extraEnvVars = p.get('extraEnvVars', [:])
-    def configFileCredentialsId = p.get('configFileCredentialsId', "")
+    def configFileCredentialsId = p.get('configFileCredentialsId', '')
     def parallelWorkerCount = p.get('parallelWorkerCount', 2)
-    def cloud = p.get('cloud', "openshift")
+    def cloud = p.get('cloud', 'openshift')
     def ui = p.get('ui', false)
 
     def refSpec
     if (env.CHANGE_ID) refSpec = getRefSpec()
-    else refSpec = env.BRANCH_NAME ? env.BRANCH_NAME : "master"
+    else refSpec = env.BRANCH_NAME ? env.BRANCH_NAME : 'master'
 
     // add job parameters to allow users to change job options when clicking 'build'
     setParamDefaults(
@@ -329,8 +322,8 @@ def call(p = [:]) {
     pipelineUtils.checkForReload()
 
     if (!params.GIT_REF) {
-        echo "No git ref specified, is this the first time the job has run?"
-        currentBuild.description = "reload"
+        echo 'No git ref specified, is this the first time the job has run?'
+        currentBuild.description = 'reload'
         return
     }
 
@@ -339,16 +332,16 @@ def call(p = [:]) {
     // set the iqeUtils options based on the args passed into the job
     options['marker'] = params.MARKER
     options['filter'] = params.FILTER
-    options['envName'] = options.get('envName', "smoke")
-    options['extraEnvVars'] = options.get("extraEnvVars", extraEnvVars)
+    options['envName'] = options.get('envName', 'smoke')
+    options['extraEnvVars'] = options.get('extraEnvVars', extraEnvVars)
     options['ibutsu'] = options.get('ibutsu')
     options['reportportal'] = options.get('reportportal', false)
     options['settingsFileCredentialsId'] = options.get(
-        "settingsFileCredentialsId", configFileCredentialsId
+        'settingsFileCredentialsId', configFileCredentialsId
     )
-    options['parallelWorkerCount'] = options.get("parallelWorkerCount", parallelWorkerCount)
-    options['cloud'] = options.get("cloud", cloud)
-    options['ui'] = options.get("ui", ui)
+    options['parallelWorkerCount'] = options.get('parallelWorkerCount', parallelWorkerCount)
+    options['cloud'] = options.get('cloud', cloud)
+    options['ui'] = options.get('ui', ui)
 
     // create the appConfig/options used by iqeUtils if it was not specified (for backward compat)
     if (!appConfigs) {
@@ -367,7 +360,7 @@ def call(p = [:]) {
         }
 
         // Run the job using github status notifications so the test status is reported to the PR
-        gitUtils.withStatusContext("e2e-smoke") {
+        gitUtils.withStatusContext('e2e-smoke') {
             runPipeline(
                 refSpec, ocDeployerBuilderPath, ocDeployerComponentPath, ocDeployerServiceSets,
                 buildScaleFactor, deployScaleFactor, scaleFirstSetOnly, parallelBuild, options, appConfigs

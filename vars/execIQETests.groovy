@@ -35,7 +35,7 @@ def call(args = [:]) {
     // Run the tests
     if (!lockName) lockName = "${options['envName']}-test"
     lock(lockName) {
-        timeout(time: options['timeout'], unit: "MINUTES") {
+        timeout(time: options['timeout'], unit: 'MINUTES') {
             results = pipelineUtils.runParallel(iqeUtils.prepareStages(options, appConfigs))
         }
     }
@@ -46,9 +46,9 @@ def call(args = [:]) {
         }
     }
 
-    if (!results) error("Found no test results")
+    if (!results) error('Found no test results')
     def totalResults = results['success'].size() + results['failed'].size()
-    if (totalResults != appConfigs.keySet().size()) error("Did not find test results for expected number of apps")
+    if (totalResults != appConfigs.keySet().size()) error('Did not find test results for expected number of apps')
 
     return results
 }

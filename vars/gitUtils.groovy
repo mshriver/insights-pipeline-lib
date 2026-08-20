@@ -2,8 +2,7 @@
  * Various helpers for interacting with git / github
  */
 
-
-private def getFilesFromChangeSets() {
+private getFilesFromChangeSets() {
     def changedFiles = []
     currentBuild.changeSets.each { changeSet ->
         changeSet.items.each { item ->
@@ -17,8 +16,7 @@ private def getFilesFromChangeSets() {
     return dataSet
 }
 
-
-private def getFilesFromCommits(oldCommit, newCommit, repoDir) {
+private getFilesFromCommits(oldCommit, newCommit, repoDir) {
     // Return a list of which files/folders changed between
     // oldCommit and newCommit in the given repoDir
     //
@@ -27,8 +25,8 @@ private def getFilesFromCommits(oldCommit, newCommit, repoDir) {
     //   "+refs/heads/*:refs/remotes/origin/heads/* +refs/pull/*:refs/remotes/origin/pull/*"
     dir(repoDir) {
         withEnv([
-            "GIT_COMMITTER_NAME=nobody",
-            "GIT_COMMITTER_EMAIL=nobody@redhat.com"
+            'GIT_COMMITTER_NAME=nobody',
+            'GIT_COMMITTER_EMAIL=nobody@redhat.com'
         ]) {
             data = sh(
                 script: "git diff --name-only ${oldCommit} ${newCommit}",
@@ -42,7 +40,6 @@ private def getFilesFromCommits(oldCommit, newCommit, repoDir) {
     return dataSet
 }
 
-
 def getFilesChanged(parameters = [:]) {
     def oldCommit = parameters.get('oldCommit')
     def newCommit = parameters.get('newCommit')
@@ -55,15 +52,13 @@ def getFilesChanged(parameters = [:]) {
     }
 }
 
-
-private def URLShortener(String url) {
+private URLShortener(String url) {
     // we would prefer to not expose internal hostnames
     def response = httpRequest "https://url.corp.redhat.com/new?${url}"
     if (response.status == 200) {
         return response.content
     }
 }
-
 
 def ghNotify(parameters = [:]) {
     // Notifies a github context with a certain status. Replaces URLs with blue ocean URLs
@@ -75,21 +70,21 @@ def ghNotify(parameters = [:]) {
 
     blueBuildUrl = commonUtils.getBlueBuildUrl()
 
-    if (status == "PENDING") {
+    if (status == 'PENDING') {
         // Always link to the fancy blue ocean UI while the job is running ...
         targetUrl = env.RUN_DISPLAY_URL
     } else {
         switch (context) {
-            case "lint":
+            case 'lint':
                 targetUrl =  "${blueBuildUrl}tests"
                 break
-            case "unittest":
+            case 'unittest':
                 targetUrl =  "${blueBuildUrl}tests"
                 break
-            case "coverage":
+            case 'coverage':
                 targetUrl = "${env.BUILD_URL}artifact/htmlcov/index.html"
                 break
-            case "artifacts":
+            case 'artifacts':
                 targetUrl = "${blueBuildUrl}artifacts"
                 break
             default:
@@ -106,7 +101,6 @@ def ghNotify(parameters = [:]) {
         echo "Error notifying GitHub: ${msg}"
     }
 }
-
 
 def checkOutRepo(parameters = [:]) {
     def targetDir = parameters['targetDir']
@@ -128,22 +122,20 @@ def checkOutRepo(parameters = [:]) {
     ])
 }
 
-
 def getStatusContext(String context) {
-    return "continuous-integration/jenkins/${context.toLowerCase().replaceAll('\\s','')}"
+    return "continuous-integration/jenkins/${context.toLowerCase().replaceAll('\\s', '')}"
 }
-
 
 def withStatusContext(String context, Boolean shortenURL = false, Closure body) {
     /**
      * Context manager which notifies github if the operation succeeds or fails
      * Example: gitUtils.withStatusContext("unit-tests") { }
      */
-    ghNotify context: context, shortenURL: shortenURL, status: "PENDING"
+    ghNotify context: context, shortenURL: shortenURL, status: 'PENDING'
 
     try {
         body()
-        ghNotify context: context, shortenURL: shortenURL, status: "SUCCESS"
+        ghNotify context: context, shortenURL: shortenURL, status: 'SUCCESS'
     } catch (err) {
         echo err.toString()
         echo err.getMessage()
@@ -153,12 +145,11 @@ def withStatusContext(String context, Boolean shortenURL = false, Closure body) 
         } catch (innerErr) {
             echo innerErr.toString()
         } finally {
-            currentBuild.result = "FAILURE"
-            ghNotify context: context, shortenURL: shortenURL, status: "FAILURE"
+            currentBuild.result = 'FAILURE'
+            ghNotify context: context, shortenURL: shortenURL, status: 'FAILURE'
         }
     }
 }
-
 
 def stageWithContext(String name, Boolean shortenURL = true, Closure body) {
     /**
@@ -173,7 +164,7 @@ def stageWithContext(String name, Boolean shortenURL = true, Closure body) {
     *
     * After:
     * gitUtils.stageWithContext("Run-integration-tests") {
-    *     body()   
+    *     body()
     * }
     */
     stage(name) {
@@ -189,11 +180,11 @@ def getBaseCommit() {
     * https://issues.jenkins-ci.org/browse/JENKINS-56341
     */
     def baseCommit = ''
-    def latestCommit = sh(label: 'Get previous commit', script: "git rev-parse HEAD", returnStdout: true)?.trim()
-    def previousCommit = sh(label: 'Get previous commit', script: "git rev-parse HEAD^", returnStdout: true)?.trim()
+    def latestCommit = sh(label: 'Get previous commit', script: 'git rev-parse HEAD', returnStdout: true)?.trim()
+    def previousCommit = sh(label: 'Get previous commit', script: 'git rev-parse HEAD^', returnStdout: true)?.trim()
     if (env?.CHANGE_ID == null) {
         baseCommit = env.GIT_COMMIT
-    } else if("${env.GIT_COMMIT}".equals("${latestCommit}")) {
+    } else if ("${env.GIT_COMMIT}".equals("${latestCommit}")) {
         baseCommit = env.GIT_COMMIT
     } else {
         baseCommit = previousCommit

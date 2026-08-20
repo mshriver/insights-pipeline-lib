@@ -8,10 +8,9 @@ def sendEmail(args = [:]) {
     def subject = args.get('subject')
     def body = args.get('body')
 
-    if(to != null && !to.isEmpty()) {
-      emailext(body: body, mimeType: 'text/html',
+    if (to != null && !to.isEmpty()) {
+        emailext(body: body, mimeType: 'text/html',
          replyTo: replyTo, subject: subject,
          to: to, attachLog: true )
     }
 }
-

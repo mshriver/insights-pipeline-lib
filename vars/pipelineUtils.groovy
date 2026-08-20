@@ -2,7 +2,6 @@
  * Various utils that help with writing more efficient pipeline code/pipeline flow control
  */
 import com.cloudbees.groovy.cps.NonCPS
-import hudson.AbortException
 
 def checkIfMasterOrPullReq() {
     // Check SCM to ensure this is a master branch/untested PR
@@ -29,7 +28,6 @@ def checkIfMasterOrPullReq() {
     return false
 }
 
-
 def runIfMasterOrPullReq(Closure body) {
     // Run the code block only after checking SCM to ensure this is a master branch/untested PR
     // Allocates/allocates a node to check scm
@@ -45,7 +43,6 @@ def runIfMasterOrPullReq(Closure body) {
     }
 }
 
-
 def runParallel(Map<String, Closure> map) {
     /**
      * A wrapper around the 'parallel' method that tracks the pass/fail state of the individual
@@ -60,7 +57,7 @@ def runParallel(Map<String, Closure> map) {
      */
     def successStages = []
     def failedStages = []
-    
+
     def newMap = [:]
 
     map.each { stageName, stageClosure ->
@@ -80,9 +77,8 @@ def runParallel(Map<String, Closure> map) {
         parallel(newMap)
     }
 
-    return ["success": successStages, "failed": failedStages]
+    return ['success': successStages, 'failed': failedStages]
 }
-
 
 @NonCPS
 def getGroupedTasks(Map tasks, int groupSize) {
@@ -111,7 +107,6 @@ def getGroupedTasks(Map tasks, int groupSize) {
     return groupedTasks
 }
 
-
 def runGroupedTasks(Map tasks, int groupSize) {
     /**
      * Run a collection of grouped tasks.
@@ -126,13 +121,12 @@ def runGroupedTasks(Map tasks, int groupSize) {
     groupedTasks.each { name, groupTasks ->
         stage(name) {
             def results = runParallel(groupTasks)
-            successTasks.addAll(results["success"])
-            failedTasks.addAll(results["failed"])
+            successTasks.addAll(results['success'])
+            failedTasks.addAll(results['failed'])
         }
     }
-    return ["success": successTasks, "failed": failedTasks]
+    return ['success': successTasks, 'failed': failedTasks]
 }
-
 
 def stageIf(def condition, String name, Closure body) {
     /**
@@ -146,7 +140,7 @@ def stageIf(def condition, String name, Closure body) {
     *
     * After:
     * stageIf(condition, "My stage") {
-    *     body()   
+    *     body()
     * }
     */
     if (condition) {
@@ -154,11 +148,10 @@ def stageIf(def condition, String name, Closure body) {
             body()
         }
     }
-}
-
+    }
 
 @NonCPS
-private def triggeredByCommentNonCPS(currentBuild) {
+private triggeredByCommentNonCPS(currentBuild) {
     def rb = currentBuild.rawBuild
     def issueCommentCause = (
         rb.getCause(org.jenkinsci.plugins.pipeline.github.trigger.IssueCommentCause) != null
@@ -170,13 +163,12 @@ private def triggeredByCommentNonCPS(currentBuild) {
         return true
     } else {
         echo(
-            "Build not started by issue comment trigger, rebuild/replay trigger, " +
-            "or manual build trigger"
+            'Build not started by issue comment trigger, rebuild/replay trigger, ' +
+            'or manual build trigger'
         )
         return false
     }
 }
-
 
 def triggeredByComment() {
     /**
@@ -186,7 +178,6 @@ def triggeredByComment() {
      */
     return triggeredByCommentNonCPS(currentBuild)
 }
-
 
 def cancelPriorBuilds() {
     /**
@@ -212,18 +203,16 @@ def cancelPriorBuilds() {
     }
 }
 
-
 def checkForReload() {
     // Exit the job if the "reload" box was checked
     if (params.RELOAD) {
-        echo "Job is configured to reload pipeline script and exit. Aborting."
-        currentBuild.description = "reload"
-        currentBuild.result = "ABORTED"
-        error("Job is configured to reload pipeline script and exit. Aborting.")
+        echo 'Job is configured to reload pipeline script and exit. Aborting.'
+        currentBuild.description = 'reload'
+        currentBuild.result = 'ABORTED'
+        error('Job is configured to reload pipeline script and exit. Aborting.')
     }
 }
 
-
 def throwIfAborted(Exception err) {
-    if (currentBuild.result == "ABORTED") throw err
+    if (currentBuild.result == 'ABORTED') throw err
 }

@@ -9,7 +9,6 @@
         unrelated to the test itself failing)
  */
 
-
 /*
  * Function is taking care of getting previous N builds
  *
@@ -18,11 +17,10 @@
  * @return List -- list with the builds (youngest build first)
  */
 def getPreviousBuilds(reqNumOfBuilds) {
-
     int count = 0
     prevBuildList = []
 
-    while(count != reqNumOfBuilds) {
+    while (count != reqNumOfBuilds) {
         if (prevBuildList) {
             currentBuildMinusX = prevBuildList.last().getPreviousBuild()
         } else {
@@ -34,15 +32,15 @@ def getPreviousBuilds(reqNumOfBuilds) {
             break
         }
         echo "Found currentBuildMinus${count + 1} build: ${currentBuildMinusX.getDisplayName()}"
-        prevBuildList.add(currentBuildMinusX);
+        prevBuildList.add(currentBuildMinusX)
 
-        count++;
+        count++
     }
     return prevBuildList
 }
 
 /*
- * Function checks if tests have been resolved by reading previous build results. 
+ * Function checks if tests have been resolved by reading previous build results.
  * The oldest build shouldn't be successfull while other builds (reqNumBuildsPassBeforeResolved) have to be green.
  *
  * @param prevBuildList List -- list of previous builds
@@ -51,7 +49,6 @@ def getPreviousBuilds(reqNumOfBuilds) {
  * @return Boolean -- list with the builds (youngest build first)
  */
 def checkTestsResolved(prevBuildList, reqNumBuldsToCountResolved) {
-
     if (prevBuildList.size() != reqNumBuldsToCountResolved) {
         // We expect to have enough builds to count if tests were resolved
         return false
@@ -60,22 +57,21 @@ def checkTestsResolved(prevBuildList, reqNumBuldsToCountResolved) {
     for (build in prevBuildList) {
         if (build == prevBuildList.last()) {
             // The oldest build can't be green to consider tests resolved
-            if (build.getResult().toString() != "SUCCESS") {
+            if (build.getResult().toString() != 'SUCCESS') {
                 return true
             }
         }
         // other builds have to be green to consider tests resolved
-        if (build.getResult().toString() != "SUCCESS") {
+        if (build.getResult().toString() != 'SUCCESS') {
             return false
         }
     }
     return false
 }
 
-
 def call(args = [:]) {
-    def defaultSlackMsgCallback = { return "tests failed" }
-    def defaultSlackSuccessMsgCallback = { return "tests succeded" }
+    def defaultSlackMsgCallback = { return 'tests failed' }
+    def defaultSlackSuccessMsgCallback = { return 'tests succeded' }
 
     // arguments to pass to execIQETests
     def appConfigs = args['appConfigs']
@@ -124,10 +120,10 @@ def call(args = [:]) {
         )
 
         // check that we actually got results
-        if (!results) error("Found no test results, unexpected error must have occurred")
+        if (!results) error('Found no test results, unexpected error must have occurred')
 
         if (results['failed']) {
-            if (alwaysSendFailureNotification || previousBuilds.isEmpty() || previousBuilds.first().getResult().toString() == "SUCCESS") {
+            if (alwaysSendFailureNotification || previousBuilds.isEmpty() || previousBuilds.first().getResult().toString() == 'SUCCESS') {
                 def slackMsg = slackMsgCallback()
                 slackUtils.sendMsg(
                     slackChannel: slackChannel,
@@ -135,7 +131,7 @@ def call(args = [:]) {
                     slackTeamDomain: slackTeamDomain,
                     slackTokenCredentialId: slackTokenCredentialId,
                     msg: slackMsg.toString(),
-                    result: "failure"
+                    result: 'failure'
                 )
             }
         }
@@ -148,7 +144,7 @@ def call(args = [:]) {
                     slackTeamDomain: slackTeamDomain,
                     slackTokenCredentialId: slackTokenCredentialId,
                     msg: slackMsg.toString(),
-                    result: "success"
+                    result: 'success'
                 )
             }
             else if (runResolved) {
@@ -159,22 +155,22 @@ def call(args = [:]) {
                     slackUrl: slackUrl,
                     slackTeamDomain: slackTeamDomain,
                     slackTokenCredentialId: slackTokenCredentialId,
-                    msg: "tests resolved",
-                    result: "success"
+                    msg: 'tests resolved',
+                    result: 'success'
                 )
             }
         }
     } catch (err) {
-        if (currentBuild.description == "reload") return
+        if (currentBuild.description == 'reload') return
         else {
-            currentBuild.description = "error"
+            currentBuild.description = 'error'
             slackUtils.sendMsg(
                 slackChannel: errorSlackChannel,
                 slackUrl: slackUrl,
                 slackTeamDomain: slackTeamDomain,
                 slackTokenCredentialId: slackTokenCredentialId,
                 msg: "\nHit unhandled error:\n${err.getMessage()}",
-                result: "failure"
+                result: 'failure'
             )
             throw err
         }
