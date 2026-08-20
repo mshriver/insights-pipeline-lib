@@ -1,6 +1,8 @@
 # insights-pipeline-lib
 Shared library for use in Jenkins pipelines
 
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/RedHatInsights/insights-pipeline-lib/master.svg)](https://results.pre-commit.ci/latest/github/RedHatInsights/insights-pipeline-lib/master)
+
 Required Jenkins plugins:
  * Blue Ocean / all the 'typical' plugins for GitHub multi-branch pipelines
  * GitHub Branch Source Plugin
